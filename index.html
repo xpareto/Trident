@@ -1,4 +1,4 @@
-<!-- START OF FILE: index.html (Save as Trident_v4.html) -->
+       <!-- START OF FILE: index.html (Save as Trident_v5.html) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="theme-color" content="#FFFFFF" id="themeMeta"/>
-    <title>Trident v4</title>
+    <title>Trident v5</title>
     <style>
         :root {
             --bg: #FFFFFF;
@@ -43,6 +43,10 @@
         }
         .version-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; }
 
+        .nav-group { display: flex; align-items: center; gap: 5px; }
+        .nav-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 5px 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: var(--accent); }
+        .nav-btn.active { background: var(--accent); color: white; }
+
         .grid { display: flex; flex-direction: column; width: 100%; min-width: 800px; }
         .r { 
             display: grid; 
@@ -64,13 +68,10 @@
         .r.weekend { background-color: var(--weekend); }
         .r.today .c-sticky { background-color: var(--today-bg) !important; color: var(--today-text) !important; }
 
-        /* REPARAȚIE TEXT LUNG: white-space normal permite trecerea pe rândul nou */
         .ev-item { 
             display: flex; align-items: flex-start; gap: 4px; padding: 3px; 
             border-bottom: 1px solid var(--border); font-weight: 600; line-height: 1.2; font-size: 0.95em; 
-            background: transparent;
-            white-space: normal; 
-            word-break: break-word; 
+            white-space: normal; word-break: break-word; 
         }
         .ev-item.done { opacity: 0.5; text-decoration: line-through; }
         .chk { width: 16px; height: 16px; margin-top: 1px; flex-shrink: 0; }
@@ -79,7 +80,6 @@
             width: 100%; border: none; background: transparent; font-family: inherit; 
             font-size: 0.9em; font-style: italic; resize: none; outline: none; color: var(--text); 
             margin-top: auto; border-top: 1px dotted var(--border); padding-top: 2px;
-            white-space: normal;
         }
 
         .tap-area { flex-grow: 1; min-height: 20px; cursor: cell; }
@@ -89,7 +89,6 @@
             z-index: 2000; align-items: center; justify-content: center; padding: 15px;
         }
         .m-box { background: var(--bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 340px; }
-        .m-btn { padding: 10px; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; }
 
         .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); border-top: 2px solid var(--accent); padding: 8px; display: flex; gap: 8px; z-index: 1100; }
         #cmd-input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; outline: none; background: var(--bg); color: var(--text); }
@@ -98,13 +97,14 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div><span class="version-badge">Trident v4</span></div>
-    <div style="display:flex; gap:5px;">
-        <button class="m-btn" style="background:#10b981; color:white; padding:5px 10px;" onclick="calLogin()">SYNC GOOGLE</button>
-        <button class="m-btn" onclick="nav(-1)">‹</button>
-        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 100px; text-align: center; line-height: 30px;">...</div>
-        <button class="m-btn" onclick="nav(1)">›</button>
-        <button class="m-btn" onclick="openSet()">⚙️</button>
+    <div><span class="version-badge">Trident v5</span></div>
+    <div class="nav-group">
+        <button class="nav-btn" id="btnEco" onclick="toggleEco()">ECONOM</button>
+        <button class="nav-btn" style="background:#10b981; color:white; border:none;" onclick="calLogin()">SYNC</button>
+        <button class="nav-btn" onclick="nav(-1)">‹</button>
+        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 100px; text-align: center;">...</div>
+        <button class="nav-btn" onclick="nav(1)">›</button>
+        <button class="nav-btn" onclick="openSet()">⚙️</button>
     </div>
 </header>
 
@@ -120,19 +120,19 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmd-input" placeholder="Comandă rapidă: /c15rl Pizza">
+    <input type="text" id="cmd-input" placeholder="Comandă: /c15rl Pizza">
     <button onclick="runCmd()" style="padding:0 15px; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:bold;">OK</button>
 </div>
 
-<!-- Modal Adaugare/Editare -->
+<!-- Modal Editare -->
 <div id="modal">
     <div class="m-box">
-        <h3 id="modalTitle" style="font-size: 14px; margin-bottom:15px;">DETALII ZI</h3>
-        <input type="text" id="evName" placeholder="Nume eveniment..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border);">
+        <h3 id="modalTitle" style="font-size: 14px; margin-bottom:15px;">DETALII EVENIMENT</h3>
+        <input type="text" id="evName" placeholder="Nume..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border);">
         <input type="number" id="evDur" value="1" min="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border);">
         <div style="display:flex; gap:10px;">
-            <button class="m-btn" style="flex:1; background:#ccc;" onclick="closeModal()">ANULARE</button>
-            <button class="m-btn" style="flex:1; background:var(--accent); color:white;" id="btnSave">SALVEAZĂ</button>
+            <button class="nav-btn" style="flex:1; background:#ccc; color:black; height:40px;" onclick="closeModal()">ANULARE</button>
+            <button class="nav-btn" style="flex:1; background:var(--accent); color:white; height:40px;" id="btnSave">SALVEAZĂ</button>
         </div>
     </div>
 </div>
@@ -140,183 +140,35 @@
 <!-- Modal Setari -->
 <div id="setModal">
     <div class="m-box">
-        <button class="m-btn" style="width:100%; margin-bottom:10px;" onclick="exportJSON()">Export Backup</button>
-        <button class="m-btn" style="width:100%; background:var(--accent); color:white;" onclick="closeSet()">ÎNCHIDE</button>
+        <button class="nav-btn" style="width:100%; margin-bottom:10px; height:40px;" onclick="exportJSON()">Export Backup</button>
+        <button class="nav-btn" style="width:100%; background:var(--accent); color:white; height:40px;" onclick="closeSet()">ÎNCHIDE</button>
     </div>
 </div>
 
 <script>
+    // CONFIGURARE STRICTĂ GOOGLE
     const GCAL_CLIENT_ID = '679630226914-8sftsbf2gqu7hhv82jn8rc9q51j94pha.apps.googleusercontent.com';
+    const GCAL_REDIRECT = 'https://xpareto.github.io/Trident/'; // Trebuie să fie IDENTIC cu ce e în Google Cloud
+
     let vDate = new Date();
-    let db = JSON.parse(localStorage.getItem('trident_db_v4') || '[]');
-    let journal = JSON.parse(localStorage.getItem('trident_j_v4') || '{}');
+    let db = JSON.parse(localStorage.getItem('trident_db_v5') || '[]');
+    let journal = JSON.parse(localStorage.getItem('trident_j_v5') || '{}');
     let eco = localStorage.getItem('trident_eco') === 'true';
-    let g_evs = []; // Evenimente de la Google
+    let g_evs = []; 
     let editRef = null;
 
     function initApp() {
-        render();
+        if(eco) document.getElementById('btnEco').classList.add('active');
         handleGoogleCallback();
+        render();
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     }
 
-    function nav(d) { vDate.setMonth(vDate.getMonth() + d); render(); syncGoogle(); }
-
-    function render() {
-        const body = document.getElementById('gridBody');
-        const Y = vDate.getFullYear(), M = vDate.getMonth();
-        const now = new Date(); now.setHours(0,0,0,0);
-        const daysInM = new Date(Y, M + 1, 0).getDate();
-        
-        document.getElementById('mLabel').innerText = vDate.toLocaleDateString('ro-RO', {month:'long', year:'numeric'}).toUpperCase();
-        body.innerHTML = '';
-
-        for (let d = 1; d <= daysInM; d++) {
-            const dt = new Date(Y, M, d);
-            const isToday = now.toDateString() === dt.toDateString();
-            const key = `${Y}-${M}-${d}`;
-
-            // Combinăm baza de date locală cu evenimentele Google
-            const dayEvs = [...db, ...g_evs].filter(e => {
-                const startDt = new Date(e.y, e.m, e.d);
-                const endDt = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
-                return dt >= startDt && dt <= endDt;
-            });
-
-            const row = document.createElement('div');
-            row.className = `r ${ (dt.getDay()===0||dt.getDay()===6)?'weekend':'' } ${isToday?'today':''}`;
-            if(isToday) row.id = "scroll-today";
-
-            row.innerHTML = `
-                <div class="c c-nrz c-sticky">${d}</div>
-                <div class="c c-numez c-sticky">${dt.toLocaleDateString('ro-RO',{weekday:'short'}).slice(0,2).toUpperCase()}</div>
-                <div class="c" onclick="openModal(${d}, 'm')">${drawItems(dayEvs.filter(e => e.t === 'm'))}<div class="tap-area"></div></div>
-                <div class="c" onclick="openModal(${d}, 'c')">
-                    ${drawItems(dayEvs.filter(e => e.t === 'c'))}
-                    <textarea class="journal-box" placeholder="Note..." onclick="event.stopPropagation()" onblur="saveJ('${key}', this.value)">${journal[key]||''}</textarea>
-                    <div class="tap-area"></div>
-                </div>
-                <div class="c" onclick="openModal(${d}, 'a')">${drawItems(dayEvs.filter(e => e.t === 'a'))}<div class="tap-area"></div></div>
-            `;
-            body.appendChild(row);
-        }
+    function toggleEco() {
+        eco = !eco;
+        localStorage.setItem('trident_eco', eco);
+        document.getElementById('btnEco').classList.toggle('active');
+        render();
     }
 
-    function drawItems(list) {
-        return list.map(e => `
-            <div class="ev-item ${e.done ? 'done' : ''}" onclick="event.stopPropagation(); ${e.id.startsWith('G_') ? '' : `editItem('${e.id}')`}">
-                ${e.id.startsWith('G_') ? '☁️' : `<input type="checkbox" class="chk" ${e.done ? 'checked' : ''} onclick="event.stopPropagation(); tgl('${e.id}')">`}
-                <span>${e.n}</span>
-            </div>
-        `).join('');
-    }
-
-    function tgl(id) {
-        let ev = db.find(x => x.id === id);
-        if(ev) { ev.done = !ev.done; save(); render(); }
-    }
-
-    // --- GOOGLE CALENDAR SYNC ---
-    function calLogin() {
-        const params = new URLSearchParams({
-            client_id: GCAL_CLIENT_ID,
-            redirect_uri: window.location.origin + window.location.pathname,
-            response_type: 'token',
-            scope: 'https://www.googleapis.com/auth/calendar.readonly',
-            prompt: 'select_account'
-        });
-        window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-    }
-
-    function handleGoogleCallback() {
-        const hash = window.location.hash;
-        if (hash.includes('access_token')) {
-            const token = new URLSearchParams(hash.substring(1)).get('access_token');
-            localStorage.setItem('gcal_token', token);
-            window.location.hash = "";
-            syncGoogle();
-        }
-    }
-
-    async function syncGoogle() {
-        const token = localStorage.getItem('gcal_token');
-        if (!token) return;
-
-        const start = new Date(vDate.getFullYear(), vDate.getMonth(), 1).toISOString();
-        const end = new Date(vDate.getFullYear(), vDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
-
-        try {
-            const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await resp.json();
-            if (data.items) {
-                g_evs = data.items.map(ge => {
-                    const dt = new Date(ge.start.dateTime || ge.start.date);
-                    let type = 'c';
-                    if (ge.recurrence && ge.recurrence[0].includes('MONTHLY')) type = 'm';
-                    if (ge.recurrence && ge.recurrence[0].includes('YEARLY')) type = 'a';
-                    return { id: 'G_'+ge.id, d: dt.getDate(), m: dt.getMonth(), y: dt.getFullYear(), n: ge.summary, t: type, dur: 1, done: false };
-                });
-                render();
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    // --- LOGICĂ TASK-URI ---
-    function openModal(d, type) {
-        editRef = { mode: 'add', d, m: vDate.getMonth(), y: vDate.getFullYear(), t: type };
-        document.getElementById('evName').value = ""; document.getElementById('evDur').value = "1";
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    function editItem(id) {
-        const ev = db.find(x => x.id === id);
-        editRef = { mode: 'edit', id: id };
-        document.getElementById('evName').value = ev.n; document.getElementById('evDur').value = ev.dur || 1;
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    document.getElementById('btnSave').onclick = function() {
-        const name = document.getElementById('evName').value.trim();
-        const dur = parseInt(document.getElementById('evDur').value) || 1;
-        if (editRef.mode === 'add' && name) {
-            db.push({ id: 'ID'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur, done: false });
-        } else if (editRef.mode === 'edit') {
-            let ev = db.find(x => x.id === editRef.id);
-            if(!name) db = db.filter(x => x.id !== editRef.id);
-            else { ev.n = name; ev.dur = dur; }
-        }
-        save(); closeModal(); render();
-    };
-
-    function saveJ(k, v) { if(v.trim()) journal[k] = v; else delete journal[k]; save(); }
-    function save() { 
-        localStorage.setItem('trident_db_v4', JSON.stringify(db)); 
-        localStorage.setItem('trident_j_v4', JSON.stringify(journal));
-    }
-
-    function runCmd() {
-        const inp = document.getElementById('cmd-input');
-        const val = inp.value.trim();
-        if (val.startsWith('/c')) {
-            const m = val.match(/\/c(\d{2})(\d{2})?([rzla]{2})?\s+(.*)/);
-            if (m) {
-                db.push({ id: 'ID'+Date.now(), d: parseInt(m[1]), m: m[2]?parseInt(m[2])-1:vDate.getMonth(), y: vDate.getFullYear(), t: m[3]==='rl'?'m':(m[3]==='ra'?'a':'c'), n: m[4], dur: 1, done: false });
-                save(); render();
-            }
-        }
-        inp.value = "";
-    }
-
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function openSet() { document.getElementById('setModal').style.display = 'flex'; }
-    function closeSet() { document.getElementById('setModal').style.display = 'none'; }
-    function exportJSON() {
-        const b = new Blob([JSON.stringify({tasks:db, journal:journal})], {type:'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = `trident_v4.json`; a.click();
-    }
-</script>
-</body>
-</html>
+    function nav(d) { vDate.setMonth(vDate.getMonth() + d); render
