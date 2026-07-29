@@ -1,0 +1,312 @@
+<!-- START OF FILE: index.html (Save as Trident_v3.html) -->
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <link rel="manifest" href="manifest.json"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="theme-color" content="#FFFFFF" id="themeMeta"/>
+    <title>Trident v3</title>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --header-bg: #F8FAFC;
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --text-muted: #64748B;
+            --accent: #2563EB;
+            --weekend: #DCFCE7; 
+            --today-bg: #FFFF00; 
+            --today-text: #000000;
+            --ev-done: #E2E8F0;
+            --f-size: 13px;
+        }
+
+        body.night-mode {
+            --bg: #0F1117;
+            --header-bg: #1A1D2E;
+            --border: #2D3048;
+            --text: #E2E8F0;
+            --weekend: #064E3B;
+            --today-bg: #858500;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: var(--f-size); transition: 0.3s; padding-bottom: 70px; overflow-x: hidden; }
+
+        /* Header Fix */
+        .hdr { 
+            background: var(--header-bg); border-bottom: 1px solid var(--border); 
+            padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; 
+            position: sticky; top: 0; z-index: 1000; height: 50px; 
+        }
+        .version-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; margin-right: 10px;}
+
+        /* Grid - 3 coloane egale (1fr) + 2 fixe mici */
+        .grid { display: flex; flex-direction: column; width: 100%; min-width: 800px; }
+        .r { 
+            display: grid; 
+            grid-template-columns: 40px 55px 1fr 1fr 1fr; 
+            border-bottom: 1px solid var(--border); background: var(--bg); position: relative; 
+        }
+
+        /* Înghețare Cap de Tabel */
+        .h-r { 
+            background: var(--header-bg); font-size: 9px; font-weight: 900; 
+            position: sticky; top: 50px; z-index: 500; color: var(--text-muted); text-transform: uppercase; 
+        }
+
+        .c { border-right: 1px solid var(--border); min-height: 48px; display: flex; flex-direction: column; position: relative; padding: 2px; }
+        
+        .c-sticky { position: sticky; background: inherit; z-index: 20; }
+        .c-nrz { left: 0; text-align: center; justify-content: center; font-weight: 800; }
+        .c-numez { left: 40px; text-align: center; justify-content: center; font-weight: 800; border-right: 2px solid var(--border); font-size: 0.85em; }
+
+        /* Statuses */
+        .r.weekend { background-color: var(--weekend); }
+        .r.today .c-sticky { background-color: var(--today-bg) !important; color: var(--today-text) !important; }
+
+        /* Content */
+        .ev-item { 
+            display: flex; align-items: flex-start; gap: 4px; padding: 3px; 
+            border-bottom: 1px solid var(--border); font-weight: 600; line-height: 1.2; font-size: 0.95em; 
+            background: var(--bg);
+        }
+        .ev-item.done { opacity: 0.5; text-decoration: line-through; background: var(--ev-done); }
+        .chk { width: 16px; height: 16px; margin-top: 1px; flex-shrink: 0; }
+        
+        .journal-box { 
+            width: 100%; border: none; background: transparent; font-family: inherit; 
+            font-size: 0.9em; font-style: italic; resize: none; outline: none; color: var(--text); 
+            margin-top: auto; border-top: 1px dotted var(--border); padding-top: 2px;
+        }
+
+        .tap-area { flex-grow: 1; min-height: 20px; cursor: cell; }
+
+        /* Modals */
+        #modal, #setModal { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+            z-index: 2000; align-items: center; justify-content: center; padding: 15px;
+        }
+        .m-box { background: var(--bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .m-row { margin-bottom: 12px; }
+        .m-row label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 16px; margin-top: 4px; }
+        .m-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .m-btn { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; }
+
+        /* Command bar */
+        .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); border-top: 2px solid var(--accent); padding: 8px; display: flex; gap: 8px; z-index: 1100; }
+        #cmd-input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; outline: none; background: var(--bg); color: var(--text); }
+    </style>
+</head>
+<body onload="initApp()">
+
+<header class="hdr">
+    <div><span class="version-badge">Trident v3</span></div>
+    <div class="nav-group" style="display:flex; align-items:center; gap:5px;">
+        <button class="m-btn" id="btnEco" style="padding:6px 10px; font-size:10px; width:auto; margin:0;" onclick="toggleEco()">ECONOM</button>
+        <button class="m-btn" style="padding:6px 12px; width:auto; margin:0;" onclick="nav(-1)">‹</button>
+        <div id="mLabel" style="font-weight: 800; font-size: 13px; min-width: 110px; text-align: center;">...</div>
+        <button class="m-btn" style="padding:6px 12px; width:auto; margin:0;" onclick="nav(1)">›</button>
+        <button class="m-btn" style="padding:6px 10px; width:auto; margin:0;" onclick="openSet()">⚙️</button>
+    </div>
+</header>
+
+<div class="grid" id="mainGrid">
+    <div class="r h-r">
+        <div class="c c-nrz c-sticky">NRZ</div>
+        <div class="c c-numez c-sticky">NumeZ</div>
+        <div class="c">LUNARE</div>
+        <div class="c">CURENTE / JURNAL</div>
+        <div class="c">ANUALE</div>
+    </div>
+    <div id="gridBody"></div>
+</div>
+
+<div class="cmd-bar">
+    <input type="text" id="cmd-input" placeholder="Rapid: /c1505rl Sedinta">
+    <button onclick="runCmd()" style="padding:0 15px; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:bold;">OK</button>
+</div>
+
+<!-- Modal Adaugare Eveniment -->
+<div id="modal">
+    <div class="m-box">
+        <h3 id="modalTitle" style="font-size: 12px; margin-bottom:15px;">ADĂUGARE EVENIMENT</h3>
+        <div class="m-row">
+            <label>Denumire</label>
+            <input type="text" id="evName" placeholder="Nume eveniment...">
+        </div>
+        <div class="m-row">
+            <label>Durată (zile)</label>
+            <input type="number" id="evDur" value="1" min="1">
+        </div>
+        <div class="m-btns">
+            <button class="m-btn" style="background:#F1F5F9;" onclick="closeModal()">ANULARE</button>
+            <button class="m-btn" style="background:var(--accent); color:white;" id="btnSave">SALVEAZĂ</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Setari -->
+<div id="setModal">
+    <div class="m-box">
+        <h3 style="font-size: 12px; margin-bottom:15px;">OPȚIUNI TRIDENT</h3>
+        <button class="m-btn" style="width:100%; margin-bottom:10px;" onclick="exportJSON()">Export Backup (JSON)</button>
+        <button class="m-btn" style="width:100%; background:var(--accent); color:white;" onclick="closeSet()">ÎNCHIDE</button>
+    </div>
+</div>
+
+<script>
+    let vDate = new Date();
+    let db = JSON.parse(localStorage.getItem('trident_db_v3') || '[]');
+    let journal = JSON.parse(localStorage.getItem('trident_j_v3') || '{}');
+    let eco = localStorage.getItem('trident_eco') === 'true';
+    let editRef = null;
+
+    function initApp() {
+        if(eco) document.getElementById('btnEco').style.background = "var(--accent)";
+        render();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+    }
+
+    function nav(d) { vDate.setMonth(vDate.getMonth() + d); render(); }
+
+    function toggleEco() { 
+        eco = !eco; localStorage.setItem('trident_eco', eco); 
+        location.reload(); 
+    }
+
+    function render() {
+        const body = document.getElementById('gridBody');
+        const Y = vDate.getFullYear(), M = vDate.getMonth();
+        const now = new Date(); now.setHours(0,0,0,0);
+        const daysInM = new Date(Y, M + 1, 0).getDate();
+        
+        document.getElementById('mLabel').innerText = vDate.toLocaleDateString('ro-RO', {month:'long', year:'numeric'}).toUpperCase();
+        body.innerHTML = '';
+
+        for (let d = 1; d <= daysInM; d++) {
+            const dt = new Date(Y, M, d);
+            const isToday = now.toDateString() === dt.toDateString();
+            const isWE = dt.getDay() === 0 || dt.getDay() === 6;
+            const key = `${Y}-${M}-${d}`;
+
+            // Calculăm ce evenimente cad în această zi (inclusiv cele cu durată)
+            const dayEvs = db.filter(e => {
+                const startDt = new Date(e.y, e.m, e.d);
+                const endDt = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
+                return dt >= startDt && dt <= endDt;
+            });
+
+            if (eco && dt < now && !isToday) {
+                if (!dayEvs.some(e => !e.done)) continue;
+            }
+
+            const row = document.createElement('div');
+            row.className = `r ${isWE ? 'weekend' : ''} ${isToday ? 'today' : ''}`;
+            if(isToday) row.id = "scroll-today";
+
+            row.innerHTML = `
+                <div class="c c-nrz c-sticky">${d}</div>
+                <div class="c c-numez c-sticky">${dt.toLocaleDateString('ro-RO',{weekday:'short'}).slice(0,2).toUpperCase()}</div>
+                <div class="c" onclick="openModal(${d}, 'm')">
+                    ${drawItems(dayEvs.filter(e => e.t === 'm'))}
+                    <div class="tap-area"></div>
+                </div>
+                <div class="c" onclick="openModal(${d}, 'c')">
+                    ${drawItems(dayEvs.filter(e => e.t === 'c'))}
+                    <textarea class="journal-box" placeholder="Note..." onclick="event.stopPropagation()" onblur="saveJ('${key}', this.value)">${journal[key]||''}</textarea>
+                    <div class="tap-area"></div>
+                </div>
+                <div class="c" onclick="openModal(${d}, 'a')">
+                    ${drawItems(dayEvs.filter(e => e.t === 'a'))}
+                    <div class="tap-area"></div>
+                </div>
+            `;
+            body.appendChild(row);
+        }
+        if (M === now.getMonth() && Y === now.getFullYear()) {
+            setTimeout(() => document.getElementById('scroll-today')?.scrollIntoView({behavior:'smooth', block:'center'}), 300);
+        }
+    }
+
+    function drawItems(list) {
+        return list.map(e => `
+            <div class="ev-item ${e.done ? 'done' : ''}" onclick="event.stopPropagation(); editItem('${e.id}')">
+                <input type="checkbox" class="chk" ${e.done ? 'checked' : ''} onclick="event.stopPropagation(); tgl('${e.id}')">
+                <span>${e.n}</span>
+            </div>
+        `).join('');
+    }
+
+    function tgl(id) {
+        let ev = db.find(x => x.id === id);
+        if(ev) { ev.done = !ev.done; save(); render(); }
+    }
+
+    function openModal(d, type) {
+        editRef = { mode: 'add', d, m: vDate.getMonth(), y: vDate.getFullYear(), t: type };
+        document.getElementById('modalTitle').innerText = "ADĂUGARE - ZIUA " + d;
+        document.getElementById('evName').value = "";
+        document.getElementById('evDur').value = "1";
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('evName').focus();
+    }
+
+    function editItem(id) {
+        const ev = db.find(x => x.id === id);
+        editRef = { mode: 'edit', id: id };
+        document.getElementById('modalTitle').innerText = "EDITARE EVENIMENT";
+        document.getElementById('evName').value = ev.n;
+        document.getElementById('evDur').value = ev.dur || 1;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    document.getElementById('btnSave').onclick = function() {
+        const name = document.getElementById('evName').value.trim();
+        const dur = parseInt(document.getElementById('evDur').value) || 1;
+        if (!name && editRef.mode === 'add') return closeModal();
+
+        if (editRef.mode === 'add') {
+            db.push({ id: 'ID'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur: dur, done: false });
+        } else {
+            let ev = db.find(x => x.id === editRef.id);
+            if(!name) { db = db.filter(x => x.id !== editRef.id); }
+            else { ev.n = name; ev.dur = dur; }
+        }
+        save(); closeModal(); render();
+    };
+
+    function saveJ(k, v) { if(v.trim()) journal[k] = v; else delete journal[k]; save(); }
+    function save() { 
+        localStorage.setItem('trident_db_v3', JSON.stringify(db)); 
+        localStorage.setItem('trident_j_v3', JSON.stringify(journal));
+    }
+
+    function runCmd() {
+        const inp = document.getElementById('cmd-input');
+        const val = inp.value.trim();
+        if (val.startsWith('/c')) {
+            const m = val.match(/\/c(\d{2})(\d{2})?([rzla]{2})?\s+(.*)/);
+            if (m) {
+                db.push({ id: 'ID'+Date.now(), d: parseInt(m[1]), m: m[2]?parseInt(m[2])-1:vDate.getMonth(), y: vDate.getFullYear(), t: m[3]==='rl'?'m':(m[3]==='ra'?'a':'c'), n: m[4], dur: 1, done: false });
+                save(); render();
+            }
+        }
+        inp.value = "";
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    function openSet() { document.getElementById('setModal').style.display = 'flex'; }
+    function closeSet() { document.getElementById('setModal').style.display = 'none'; }
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify({tasks:db, journal:journal})], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = `trident_v3_backup.json`; a.click();
+    }
+</script>
+</body>
+</html>
