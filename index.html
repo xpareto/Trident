@@ -1,49 +1,62 @@
-<!-- START OF FILE: index.html (Trident v16) -->
+<!-- START OF FILE: index.html (Trident v17) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v16</title>
+    <title>Trident v17</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #0F172A; --accent: #2563EB;
-            --weekend: #DCFCE7; --today-bg: #FFFF00;
+            --weekend: #f0fff4; --today-bg: #ffffcc;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: #0F172A; }
+        
+        /* Header principal fixat */
         .hdr { 
             background: #1e293b; color: white; padding: 8px; 
             display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 1000; height: 50px;
+            position: sticky; top: 0; z-index: 1100; height: 50px;
         }
-        .v-badge { background: #2563EB; color: white; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
         
-        .grid { display: block; width: 100%; min-width: 800px; }
-        .r { display: flex; width: 100%; border-bottom: 1px solid #E2E8F0; min-height: 50px; }
-        .h-r { background: #f1f5f9; font-weight: bold; font-size: 11px; position: sticky; top: 50px; z-index: 500; }
+        .v-badge { background: #2563EB; color: white; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .nav-btn.active { background: #2563EB; border-color: white; }
 
+        /* Capul de tabel fixat (SUB header) */
+        .grid { display: block; width: 100%; min-width: 800px; }
+        .h-r { 
+            display: flex; width: 100%;
+            background: #f1f5f9; font-weight: bold; font-size: 11px; 
+            position: sticky; top: 50px; z-index: 1000; 
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        .r { display: flex; width: 100%; border-bottom: 1px solid #E2E8F0; min-height: 55px; }
+        
+        /* Coloane */
         .c { border-right: 1px solid #E2E8F0; padding: 5px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-        .c-fix { flex: 0 0 50px; justify-content: center; text-align: center; font-weight: bold; background: #f8fafc; }
+        .c-fix { flex: 0 0 50px; justify-content: center; text-align: center; font-weight: bold; }
+        
+        /* Coloane NRZ i ZI îngheate lateral */
         .c-sticky { position: sticky; left: 0; z-index: 20; background: #f8fafc; }
         .c-date { left: 50px; border-right: 2px solid #cbd5e1; }
 
-        .r.weekend { background-color: #f0fff4; }
-        .r.today { background-color: #ffffcc; border: 2px solid orange; }
+        .r.weekend { background-color: var(--weekend); }
+        .r.today { background-color: var(--today-bg); outline: 2px solid orange; outline-offset: -2px; }
 
         .ev-item { font-size: 12px; font-weight: 600; padding: 2px; border-bottom: 1px solid #eee; margin-bottom: 2px; display: block; width: 100%; }
-        .j-box { width: 100%; border: none; background: transparent; font-size: 12px; font-style: italic; resize: none; outline: none; border-top: 1px dotted #ccc; margin-top: auto; }
+        .j-box { width: 100%; border: none; background: transparent; font-size: 12px; font-style: italic; resize: none; outline: none; border-top: 1px dotted #ccc; margin-top: auto; padding-top: 4px; }
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center; }
         .m-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
-        .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #eee; padding: 8px; display: flex; border-top: 2px solid #2563EB; }
+        .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f1f5f9; padding: 8px; display: flex; border-top: 2px solid #2563EB; z-index: 1100; }
     </style>
 
-    <!-- LOGS SCRIPT (SEPARAT, ÎN HEAD, PENTRU SIGURAN) -->
     <script>
-        var debugLogs = ["Log inceput..."];
+        var debugLogs = ["Log Trident v17 inceput..."];
         function addLog(m) { 
             var t = new Date().toLocaleTimeString();
             debugLogs.push(t + ": " + m);
@@ -54,8 +67,6 @@
             if(area) {
                 area.value = debugLogs.join("\n");
                 document.getElementById('logModal').style.display = 'flex';
-            } else {
-                alert(debugLogs.join("\n"));
             }
         }
     </script>
@@ -64,10 +75,10 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="showLogs()">v16</div>
-    <div id="mLabel" style="font-weight: bold;">LUNA</div>
+    <div class="v-badge" onclick="showLogs()">v17</div>
+    <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase;">LUNA</div>
     <div style="display:flex; gap:5px;">
-        <button class="nav-btn" onclick="showLogs()">LOGS</button>
+        <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
         <button class="nav-btn" onclick="calLogin()" style="background: #10b981;">SYNC</button>
         <button class="nav-btn" onclick="navMonth(-1)"></button>
         <button class="nav-btn" onclick="navMonth(1)"></button>
@@ -75,7 +86,7 @@
 </header>
 
 <div class="grid" id="mainGrid">
-    <div class="r h-r">
+    <div class="h-r">
         <div class="c c-fix c-sticky">NRZ</div>
         <div class="c c-fix c-sticky c-date">ZI</div>
         <div class="c">LUNARE</div>
@@ -86,22 +97,21 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:10px;" placeholder="Ex: /c15rl Pizza">
-    <button onclick="runCommand()" style="padding:10px; background:#2563EB; color:white; border:none;">OK</button>
+    <input type="text" id="cmdInput" style="flex:1; padding:10px; border-radius: 5px; border:1px solid #ccc;" placeholder="Ex: /c15rl Pizza">
+    <button onclick="runCommand()" style="margin-left:5px; padding:10px 20px; background:#2563EB; color:white; border:none; border-radius: 5px; font-weight: bold;">OK</button>
 </div>
 
 <!-- Modal Logs -->
 <div id="logModal" class="modal">
     <div class="m-box">
-        <h3>System Logs</h3>
-        <textarea id="logArea" style="width:100%; height:250px; font-size:10px;"></textarea>
-        <button class="nav-btn" style="width:100%; margin-top:10px;" onclick="copyToClipboard()">COPIAZ LOGS</button>
-        <button class="nav-btn" style="width:100%; margin-top:5px;" onclick="document.getElementById('logModal').style.display='none'">ÎNCHIDE</button>
+        <h3 style="margin-top:0;">System Logs</h3>
+        <textarea id="logArea" readonly style="width:100%; height:250px; font-family: monospace; font-size: 10px;"></textarea>
+        <button class="nav-btn" style="width:100%; margin-top:10px; background:#2563EB;" onclick="copyLogs()">COPIAZ LOGS</button>
+        <button class="nav-btn" style="width:100%; margin-top:5px; color: black; background: #ccc;" onclick="document.getElementById('logModal').style.display='none'">ÎNCHIDE</button>
     </div>
 </div>
 
 <script>
-    // VAR in loc de CONST pentru compatibilitate maxima
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
     
@@ -109,40 +119,47 @@
     var localDB = [];
     var journalData = {};
     var googleEvents = [];
+    var ecoMode = false;
 
     function initApp() {
-        addLog("initApp inceput");
+        addLog("init v17 pornire");
         try {
-            var savedDB = localStorage.getItem('trident_db_v16');
-            if(savedDB) localDB = JSON.parse(savedDB);
+            var sDB = localStorage.getItem('trident_db_v17');
+            if(sDB) localDB = JSON.parse(sDB);
             
-            var savedJ = localStorage.getItem('trident_j_v16');
-            if(savedJ) journalData = JSON.parse(savedJ);
-            
-            addLog("LocalStorage incarcat");
+            var sJ = localStorage.getItem('trident_j_v17');
+            if(sJ) journalData = JSON.parse(sJ);
+
+            ecoMode = localStorage.getItem('trident_eco') === 'true';
+            if(ecoMode) document.getElementById('btnEco').className = "nav-btn active";
+
+            addLog("LocalStorage ok");
             renderCalendar();
             
-            // Verificare token Google
             if(window.location.hash.indexOf('access_token') > -1) {
-                addLog("Token gasit in URL");
                 handleGoogleCallback();
             }
         } catch(e) {
-            addLog("ERROR INIT: " + e.message);
+            addLog("ERR INIT: " + e.message);
         }
     }
 
+    function toggleEco() {
+        ecoMode = !ecoMode;
+        localStorage.setItem('trident_eco', ecoMode);
+        document.getElementById('btnEco').className = ecoMode ? "nav-btn active" : "nav-btn";
+        renderCalendar();
+    }
+
     function renderCalendar() {
-        addLog("RenderCalendar inceput");
+        addLog("Render start");
         var body = document.getElementById('gridBody');
-        if(!body) return;
-        
         var Y = viewDate.getFullYear();
         var M = viewDate.getMonth();
         var now = new Date();
         now.setHours(0,0,0,0);
 
-        var monthNames = ["IANUARIE", "FEBRUARIE", "MARTIE", "APRILIE", "MAI", "IUNIE", "IULIE", "AUGUST", "SEPTEMBRIE", "OCTOMBRIE", "NOIEMBRIE", "DECEMBRIE"];
+        var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
         var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SÂ"];
         
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
@@ -156,42 +173,41 @@
             var isWeekend = (curDt.getDay() === 0 || curDt.getDay() === 6);
             var key = Y + "-" + M + "-" + d;
 
-            // Filtrare taskuri (fara spread operator pentru compatibilitate)
             var allEvs = localDB.concat(googleEvents);
             var dayEvs = [];
             for(var i=0; i<allEvs.length; i++) {
                 var e = allEvs[i];
                 var start = new Date(e.y, e.m, e.d);
                 var end = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
-                if(curDt >= start && curDt <= end) {
-                    dayEvs.push(e);
-                }
+                if(curDt >= start && curDt <= end) dayEvs.push(e);
+            }
+
+            // LOGICA ECONOM: Ascunde zilele trecute fara evenimente deschise
+            if (ecoMode && curDt < now && !isToday) {
+                // In v17, pentru simplitate, consideram ca daca are jurnal sau ev, o aratam
+                if (dayEvs.length === 0 && !journalData[key]) continue;
             }
 
             var rowClass = "r";
             if(isToday) rowClass += " today";
             if(isWeekend) rowClass += " weekend";
 
-            // Construire rând (folosind concatenare clasica +)
             html += '<div class="' + rowClass + '" ' + (isToday ? 'id="scroll-today"' : '') + '>';
             html += '<div class="c c-fix c-sticky">' + d + '</div>';
             html += '<div class="c c-fix c-sticky c-date">' + dayNames[curDt.getDay()] + '</div>';
-            
             html += '<div class="c">' + drawItems(dayEvs, 'm') + '</div>';
             html += '<div class="c">' + drawItems(dayEvs, 'c');
-            html += '<textarea class="j-box" placeholder="Not..." onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea></div>';
+            html += '<textarea class="j-box" placeholder="..." onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea></div>';
             html += '<div class="c">' + drawItems(dayEvs, 'a') + '</div>';
-            
             html += '</div>';
         }
         
         body.innerHTML = html;
-        addLog("RenderCalendar terminat");
 
         if(M === now.getMonth()) {
             setTimeout(function() {
                 var el = document.getElementById('scroll-today');
-                if(el) el.scrollIntoView({block: "center"});
+                if(el) el.scrollIntoView({block: "center", behavior: "smooth"});
             }, 500);
         }
     }
@@ -206,18 +222,17 @@
         return res;
     }
 
+    function saveJ(key, val) {
+        journalData[key] = val;
+        localStorage.setItem('trident_j_v17', JSON.stringify(journalData));
+    }
+
     function navMonth(dir) {
         viewDate.setMonth(viewDate.getMonth() + dir);
         renderCalendar();
     }
 
-    function saveJ(key, val) {
-        journalData[key] = val;
-        localStorage.setItem('trident_j_v16', JSON.stringify(journalData));
-    }
-
     function calLogin() {
-        addLog("Redirecting to Google...");
         var url = "https://accounts.google.com/o/oauth2/v2/auth?" +
                   "client_id=" + GCAL_CLIENT_ID +
                   "&redirect_uri=" + encodeURIComponent(GCAL_REDIRECT) +
@@ -227,28 +242,25 @@
         window.location.href = url;
     }
 
-    function copyToClipboard() {
-        var copyText = document.getElementById("logArea");
-        copyText.select();
+    function copyLogs() {
+        var a = document.getElementById("logArea");
+        a.select();
         document.execCommand("copy");
-        alert("Log-uri copiate!");
+        alert("Copiat!");
     }
 
     function runCommand() {
         var inp = document.getElementById('cmdInput');
         var val = inp.value;
         if(val.indexOf('/c') === 0) {
-            // Logica simplificata de adaugare pentru test
+            var day = parseInt(val.substr(2,2));
+            var text = val.substr(4);
             localDB.push({
-                id: 'ID' + Date.now(),
-                d: parseInt(val.substr(2,2)),
-                m: viewDate.getMonth(),
-                y: viewDate.getFullYear(),
-                t: 'c',
-                n: val.substr(4),
-                dur: 1
+                id: 'L' + Date.now(),
+                d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(),
+                t: 'c', n: text, dur: 1
             });
-            localStorage.setItem('trident_db_v16', JSON.stringify(localDB));
+            localStorage.setItem('trident_db_v17', JSON.stringify(localDB));
             renderCalendar();
         }
         inp.value = "";
