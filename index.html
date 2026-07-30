@@ -1,4 +1,4 @@
-<!-- START OF FILE: index.html (Save as Trident_v6.html) -->
+<!-- START OF FILE: index.html (Save as Trident_v9.html) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="theme-color" content="#FFFFFF" id="themeMeta"/>
-    <title>Trident v6</title>
+    <title>Trident v9</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #F8FAFC; --border: #E2E8F0;
@@ -23,11 +23,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: var(--f-size); transition: 0.3s; padding-bottom: 70px; overflow-x: hidden; }
         
-        .hdr { 
-            background: var(--header-bg); border-bottom: 1px solid var(--border); 
-            padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; 
-            position: sticky; top: 0; z-index: 1000; height: 50px; 
-        }
+        .hdr { background: var(--header-bg); border-bottom: 1px solid var(--border); padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; height: 50px; }
         .version-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; }
         .nav-group { display: flex; align-items: center; gap: 4px; }
         .nav-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: var(--accent); }
@@ -59,12 +55,12 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div><span class="version-badge">Trident v6</span></div>
+    <div><span class="version-badge">Trident v9</span></div>
     <div class="nav-group">
         <button class="nav-btn" id="btnEco" onclick="toggleEco()">ECONOM</button>
         <button class="nav-btn" style="background:#10b981; color:white; border:none;" onclick="calLogin()">SYNC</button>
         <button class="nav-btn" onclick="nav(-1)">‹</button>
-        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 120px; text-align: center;">ÎNCĂRCARE...</div>
+        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 120px; text-align: center;">...</div>
         <button class="nav-btn" onclick="nav(1)">›</button>
         <button class="nav-btn" onclick="openSet()">⚙️</button>
     </div>
@@ -86,6 +82,7 @@
     <button onclick="runCmd()" style="padding:0 15px; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:bold;">OK</button>
 </div>
 
+<!-- Modal Editare -->
 <div id="modal">
     <div class="m-box">
         <h3 id="modalTitle" style="font-size: 14px; margin-bottom:15px;">DETALII EVENIMENT</h3>
@@ -106,78 +103,62 @@
 </div>
 
 <script>
-    const GCAL_CLIENT_ID = '679630226914-8sftsbf2gqu7hhv82jn8rc9q51j94pha.apps.googleusercontent.com';
-    const GCAL_REDIRECT = 'https://xpareto.github.io/Trident/'; 
+    // CONFIGURARE DINAMICĂ
+    const GCAL_CLIENT_ID = 
+    '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
+    const GCAL_REDIRECT = window.location.origin + window.location.pathname; 
 
     let vDate = new Date();
-    // Schimbăm cheile la v6 pentru a evita datele corupte din cache-ul browserului
-    let db = [];
-    let journal = {};
-    try {
-        db = JSON.parse(localStorage.getItem('trident_db_v6') || '[]');
-        journal = JSON.parse(localStorage.getItem('trident_j_v6') || '{}');
-    } catch(e) { console.error("Data error", e); db = []; journal = {}; }
-
+    let db = JSON.parse(localStorage.getItem('trident_db_v9') || '[]');
+    let journal = JSON.parse(localStorage.getItem('trident_j_v9') || '{}');
     let eco = localStorage.getItem('trident_eco') === 'true';
     let g_evs = []; 
     let editRef = null;
 
     function initApp() {
-        try {
-            if(eco) document.getElementById('btnEco').classList.add('active');
-            handleGoogleCallback();
-            render();
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-        } catch(e) { alert("Eroare Init: " + e.message); }
+        if(eco) document.getElementById('btnEco').classList.add('active');
+        handleGoogleCallback();
+        render();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     }
 
-    function toggleEco() { eco = !eco; localStorage.setItem('trident_eco', eco); location.reload(); }
+    function toggleEco() { eco = !eco; localStorage.setItem('trident_eco', eco); document.getElementById('btnEco').classList.toggle('active'); render(); }
     function nav(d) { vDate.setMonth(vDate.getMonth() + d); render(); syncGoogle(); }
 
     function render() {
         const body = document.getElementById('gridBody');
         const Y = vDate.getFullYear(), M = vDate.getMonth();
         const now = new Date(); now.setHours(0,0,0,0);
-        
-        // Afișăm luna imediat
         const monthNames = ["IANUARIE", "FEBRUARIE", "MARTIE", "APRILIE", "MAI", "IUNIE", "IULIE", "AUGUST", "SEPTEMBRIE", "OCTOMBRIE", "NOIEMBRIE", "DECEMBRIE"];
         document.getElementById('mLabel').innerText = monthNames[M] + " " + Y;
-        
         const daysInM = new Date(Y, M + 1, 0).getDate();
         body.innerHTML = '';
 
         for (let d = 1; d <= daysInM; d++) {
-            try {
-                const dt = new Date(Y, M, d);
-                const isToday = now.toDateString() === dt.toDateString();
-                const key = `${Y}-${M}-${d}`;
-
-                const dayEvs = [...db, ...g_evs].filter(e => {
-                    if(!e.y) return false;
-                    const startDt = new Date(e.y, e.m, e.d);
-                    const endDt = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
-                    return dt >= startDt && dt <= endDt;
-                });
-
-                if (eco && dt < now && !isToday && !dayEvs.some(e => !e.done)) continue;
-
-                const row = document.createElement('div');
-                row.className = `r ${ (dt.getDay()===0||dt.getDay()===6)?'weekend':'' } ${isToday?'today':''}`;
-                if(isToday) row.id = "scroll-today";
-
-                row.innerHTML = `
-                    <div class="c c-nrz c-sticky">${d}</div>
-                    <div class="c c-numez c-sticky">${dt.toLocaleDateString('ro-RO',{weekday:'short'}).slice(0,2).toUpperCase()}</div>
-                    <div class="c" onclick="openModal(${d}, 'm')">${drawItems(dayEvs.filter(e => e.t === 'm'))}<div class="tap-area"></div></div>
-                    <div class="c" onclick="openModal(${d}, 'c')">
-                        ${drawItems(dayEvs.filter(e => e.t === 'c'))}
-                        <textarea class="journal-box" placeholder="..." onclick="event.stopPropagation()" onblur="saveJ('${key}', this.value)">${journal[key]||''}</textarea>
-                        <div class="tap-area"></div>
-                    </div>
-                    <div class="c" onclick="openModal(${d}, 'a')">${drawItems(dayEvs.filter(e => e.t === 'a'))}<div class="tap-area"></div></div>
-                `;
-                body.appendChild(row);
-            } catch(e) { console.error("Row error", d, e); }
+            const dt = new Date(Y, M, d);
+            const isToday = now.toDateString() === dt.toDateString();
+            const key = `${Y}-${M}-${d}`;
+            const dayEvs = [...db, ...g_evs].filter(e => {
+                const startDt = new Date(e.y, e.m, e.d);
+                const endDt = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
+                return dt >= startDt && dt <= endDt;
+            });
+            if (eco && dt < now && !isToday && !dayEvs.some(e => !e.done)) continue;
+            const row = document.createElement('div');
+            row.className = `r ${ (dt.getDay()===0||dt.getDay()===6)?'weekend':'' } ${isToday?'today':''}`;
+            if(isToday) row.id = "scroll-today";
+            row.innerHTML = `
+                <div class="c c-nrz c-sticky">${d}</div>
+                <div class="c c-numez c-sticky">${dt.toLocaleDateString('ro-RO',{weekday:'short'}).slice(0,2).toUpperCase()}</div>
+                <div class="c" onclick="openModal(${d}, 'm')">${drawItems(dayEvs.filter(e => e.t === 'm'))}<div class="tap-area"></div></div>
+                <div class="c" onclick="openModal(${d}, 'c')">
+                    ${drawItems(dayEvs.filter(e => e.t === 'c'))}
+                    <textarea class="journal-box" placeholder="..." onclick="event.stopPropagation()" onblur="saveJ('${key}', this.value)">${journal[key]||''}</textarea>
+                    <div class="tap-area"></div>
+                </div>
+                <div class="c" onclick="openModal(${d}, 'a')">${drawItems(dayEvs.filter(e => e.t === 'a'))}<div class="tap-area"></div></div>
+            `;
+            body.appendChild(row);
         }
         if (M === now.getMonth() && Y === now.getFullYear()) {
             setTimeout(() => document.getElementById('scroll-today')?.scrollIntoView({behavior:'smooth', block:'center'}), 300);
@@ -201,7 +182,8 @@
     function calLogin() {
         const params = new URLSearchParams({
             client_id: GCAL_CLIENT_ID, redirect_uri: GCAL_REDIRECT, response_type: 'token',
-            scope: 'https://www.googleapis.com/auth/calendar.readonly', prompt: 'select_account'
+            scope: 'https://www.googleapis.com/auth/calendar.events',
+            prompt: 'select_account'
         });
         window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
     }
@@ -231,12 +213,37 @@
                     const dt = new Date(ge.start.dateTime || ge.start.date);
                     let type = 'c';
                     if (ge.recurrence && ge.recurrence[0].includes('MONTHLY')) type = 'm';
-                    if (ge.recurrence && ge.recurrence[0].includes('YEARLY')) type = 'a';
+                    else if (ge.recurrence && ge.recurrence[0].includes('YEARLY')) type = 'a';
                     return { id: 'G_'+ge.id, d: dt.getDate(), m: dt.getMonth(), y: dt.getFullYear(), n: ge.summary, t: type, dur: 1, done: false };
                 });
                 render();
             }
         } catch (e) { console.error("Sync error", e); }
+    }
+
+    // --- FUNCȚIE SCRIERE GOOGLE ---
+    async function postToGoogle(ev) {
+        const token = localStorage.getItem('gcal_token');
+        if (!token) return;
+
+        const dateStr = `${ev.y}-${String(ev.m+1).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}`;
+        const body = {
+            summary: ev.n,
+            start: { date: dateStr },
+            end: { date: dateStr }, // Event all-day
+        };
+
+        if (ev.t === 'm') body.recurrence = ["RRULE:FREQ=MONTHLY"];
+        if (ev.t === 'a') body.recurrence = ["RRULE:FREQ=YEARLY"];
+
+        try {
+            await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            syncGoogle(); // Refresh după scriere
+        } catch (e) { alert("Eroare la scrierea în Google Calendar"); }
     }
 
     function openModal(d, type) {
@@ -258,7 +265,9 @@
         const name = document.getElementById('evName').value.trim();
         const dur = parseInt(document.getElementById('evDur').value) || 1;
         if (editRef.mode === 'add' && name) {
-            db.push({ id: 'ID'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur, done: false });
+            const newEv = { id: 'ID'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur, done: false };
+            db.push(newEv);
+            postToGoogle(newEv); // Trimite și la Google
         } else if (editRef.mode === 'edit') {
             let ev = db.find(x => x.id === editRef.id);
             if(!name) db = db.filter(x => x.id !== editRef.id);
@@ -269,8 +278,8 @@
 
     function saveJ(k, v) { if(v.trim()) journal[k] = v; else delete journal[k]; save(); }
     function save() { 
-        localStorage.setItem('trident_db_v6', JSON.stringify(db)); 
-        localStorage.setItem('trident_j_v6', JSON.stringify(journal));
+        localStorage.setItem('trident_db_v9', JSON.stringify(db)); 
+        localStorage.setItem('trident_j_v9', JSON.stringify(journal));
     }
 
     function runCmd() {
@@ -279,7 +288,9 @@
         if (val.startsWith('/c')) {
             const m = val.match(/\/c(\d{2})(\d{2})?([rzla]{2})?\s+(.*)/);
             if (m) {
-                db.push({ id: 'ID'+Date.now(), d: parseInt(m[1]), m: m[2]?parseInt(m[2])-1:vDate.getMonth(), y: vDate.getFullYear(), t: m[3]==='rl'?'m':(m[3]==='ra'?'a':'c'), n: m[4], dur: 1, done: false });
+                const newEv = { id: 'ID'+Date.now(), d: parseInt(m[1]), m: m[2]?parseInt(m[2])-1:vDate.getMonth(), y: vDate.getFullYear(), t: m[3]==='rl'?'m':(m[3]==='ra'?'a':'c'), n: m[4], dur: 1, done: false };
+                db.push(newEv);
+                postToGoogle(newEv); // Trimite și la Google
                 save(); render();
             }
         }
@@ -292,7 +303,7 @@
     function exportJSON() {
         const b = new Blob([JSON.stringify({tasks:db, journal:journal})], {type:'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = `trident_v6.json`; a.click();
+        a.download = `trident_v9.json`; a.click();
     }
 </script>
 </body>
