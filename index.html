@@ -1,4 +1,4 @@
-<!-- START OF FILE: index.html (Save as Trident_v9.html) -->
+<!-- START OF FILE: index.html (Salvează ca index.html - Trident v12) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <meta name="theme-color" content="#FFFFFF" id="themeMeta"/>
-    <title>Trident v9</title>
+    <title>Trident v12</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #F8FAFC; --border: #E2E8F0;
@@ -24,10 +24,10 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: var(--f-size); transition: 0.3s; padding-bottom: 70px; overflow-x: hidden; }
         
         .hdr { background: var(--header-bg); border-bottom: 1px solid var(--border); padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; height: 50px; }
-        .version-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; }
+        .version-badge { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 900; cursor: pointer; }
         .nav-group { display: flex; align-items: center; gap: 4px; }
         .nav-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-size: 11px; font-weight: bold; cursor: pointer; color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; }
+        .nav-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
         .grid { display: flex; flex-direction: column; width: 100%; min-width: 800px; }
         .r { display: grid; grid-template-columns: 40px 55px 1fr 1fr 1fr; border-bottom: 1px solid var(--border); background: var(--bg); position: relative; }
@@ -46,8 +46,8 @@
         .journal-box { width: 100%; border: none; background: transparent; font-family: inherit; font-size: 0.9em; font-style: italic; resize: none; outline: none; color: var(--text); margin-top: auto; border-top: 1px dotted var(--border); padding-top: 2px; }
         .tap-area { flex-grow: 1; min-height: 20px; cursor: cell; }
 
-        #modal, #setModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; padding: 15px; }
-        .m-box { background: var(--bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 340px; }
+        #modal, #setModal, #diagModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; padding: 15px; }
+        .m-box { background: var(--bg); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
         .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--header-bg); border-top: 2px solid var(--accent); padding: 8px; display: flex; gap: 8px; z-index: 1100; }
         #cmd-input { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; outline: none; background: var(--bg); color: var(--text); }
     </style>
@@ -55,12 +55,12 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div><span class="version-badge">Trident v9</span></div>
+    <div><span class="version-badge" onclick="openDiag()">Trident v12 🔍</span></div>
     <div class="nav-group">
         <button class="nav-btn" id="btnEco" onclick="toggleEco()">ECONOM</button>
         <button class="nav-btn" style="background:#10b981; color:white; border:none;" onclick="calLogin()">SYNC</button>
         <button class="nav-btn" onclick="nav(-1)">‹</button>
-        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 120px; text-align: center;">...</div>
+        <div id="mLabel" style="font-weight: 800; font-size: 12px; min-width: 110px; text-align: center;">...</div>
         <button class="nav-btn" onclick="nav(1)">›</button>
         <button class="nav-btn" onclick="openSet()">⚙️</button>
     </div>
@@ -82,12 +82,24 @@
     <button onclick="runCmd()" style="padding:0 15px; background:var(--accent); color:white; border:none; border-radius:6px; font-weight:bold;">OK</button>
 </div>
 
+<!-- Modal Diagnostic -->
+<div id="diagModal">
+    <div class="m-box">
+        <h3 style="margin-bottom:10px;">Diagnostic OAuth v12</h3>
+        <p style="font-size:11px; color:red; margin-bottom:10px;">Copiază adresa de mai jos și pune-o în Google Cloud la Authorized Redirect URIs:</p>
+        <input type="text" id="diagUri" readonly style="width:100%; padding:10px; background:#eee; margin-bottom:15px; border:1px solid #ccc;">
+        <p style="font-size:11px;"><b>Client ID curent (verificat):</b></p>
+        <textarea id="diagId" readonly style="width:100%; height:60px; font-size:10px; background:#e8f5e9; border:1px solid #4caf50; font-weight:bold;"></textarea>
+        <button class="nav-btn" style="width:100%; margin-top:15px; height:35px;" onclick="closeDiag()">ÎNCHIDE</button>
+    </div>
+</div>
+
 <!-- Modal Editare -->
 <div id="modal">
     <div class="m-box">
-        <h3 id="modalTitle" style="font-size: 14px; margin-bottom:15px;">DETALII EVENIMENT</h3>
-        <input type="text" id="evName" placeholder="Nume..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border);">
-        <input type="number" id="evDur" value="1" min="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border);">
+        <h3 id="modalTitle" style="font-size: 14px; margin-bottom:15px;">EVENIMENT</h3>
+        <input type="text" id="evName" placeholder="Nume..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid var(--border); border-radius:6px;">
+        <input type="number" id="evDur" value="1" min="1" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid var(--border); border-radius:6px;">
         <div style="display:flex; gap:10px;">
             <button class="nav-btn" style="flex:1; background:#ccc; color:black; height:40px;" onclick="closeModal()">ANULARE</button>
             <button class="nav-btn" style="flex:1; background:var(--accent); color:white; height:40px;" id="btnSave">SALVEAZĂ</button>
@@ -97,20 +109,21 @@
 
 <div id="setModal">
     <div class="m-box">
-        <button class="nav-btn" style="width:100%; margin-bottom:10px; height:40px;" onclick="exportJSON()">Export JSON</button>
+        <button class="nav-btn" style="width:100%; margin-bottom:10px; height:40px;" onclick="exportJSON()">Export Backup</button>
         <button class="nav-btn" style="width:100%; background:var(--accent); color:white; height:40px;" onclick="closeSet()">ÎNCHIDE</button>
     </div>
 </div>
 
 <script>
-    // CONFIGURARE DINAMICĂ
-    const GCAL_CLIENT_ID = 
-    '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
-    const GCAL_REDIRECT = window.location.origin + window.location.pathname; 
+    // CLIENT ID-UL TĂU CORECT (integrat sfintește începând cu v12):
+    const GCAL_CLIENT_ID = '05792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
+    
+    // Detectare automată a URI-ului curent (cu sau fără slash)
+    const GCAL_REDIRECT = window.location.origin + window.location.pathname;
 
     let vDate = new Date();
-    let db = JSON.parse(localStorage.getItem('trident_db_v9') || '[]');
-    let journal = JSON.parse(localStorage.getItem('trident_j_v9') || '{}');
+    let db = JSON.parse(localStorage.getItem('trident_db_v12') || localStorage.getItem('trident_db_v11') || '[]');
+    let journal = JSON.parse(localStorage.getItem('trident_j_v12') || localStorage.getItem('trident_j_v11') || '{}');
     let eco = localStorage.getItem('trident_eco') === 'true';
     let g_evs = []; 
     let editRef = null;
@@ -120,7 +133,14 @@
         handleGoogleCallback();
         render();
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        
+        // Populăm datele de diagnostic real din v12
+        document.getElementById('diagUri').value = GCAL_REDIRECT;
+        document.getElementById('diagId').value = GCAL_CLIENT_ID;
     }
+
+    function openDiag() { document.getElementById('diagModal').style.display = 'flex'; }
+    function closeDiag() { document.getElementById('diagModal').style.display = 'none'; }
 
     function toggleEco() { eco = !eco; localStorage.setItem('trident_eco', eco); document.getElementById('btnEco').classList.toggle('active'); render(); }
     function nav(d) { vDate.setMonth(vDate.getMonth() + d); render(); syncGoogle(); }
@@ -181,7 +201,9 @@
 
     function calLogin() {
         const params = new URLSearchParams({
-            client_id: GCAL_CLIENT_ID, redirect_uri: GCAL_REDIRECT, response_type: 'token',
+            client_id: GCAL_CLIENT_ID,
+            redirect_uri: GCAL_REDIRECT,
+            response_type: 'token',
             scope: 'https://www.googleapis.com/auth/calendar.events',
             prompt: 'select_account'
         });
@@ -221,29 +243,21 @@
         } catch (e) { console.error("Sync error", e); }
     }
 
-    // --- FUNCȚIE SCRIERE GOOGLE ---
     async function postToGoogle(ev) {
         const token = localStorage.getItem('gcal_token');
         if (!token) return;
-
         const dateStr = `${ev.y}-${String(ev.m+1).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}`;
-        const body = {
-            summary: ev.n,
-            start: { date: dateStr },
-            end: { date: dateStr }, // Event all-day
-        };
-
+        const body = { summary: ev.n, start: { date: dateStr }, end: { date: dateStr } };
         if (ev.t === 'm') body.recurrence = ["RRULE:FREQ=MONTHLY"];
         if (ev.t === 'a') body.recurrence = ["RRULE:FREQ=YEARLY"];
-
         try {
             await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             });
-            syncGoogle(); // Refresh după scriere
-        } catch (e) { alert("Eroare la scrierea în Google Calendar"); }
+            syncGoogle();
+        } catch (e) { console.error("Post error", e); }
     }
 
     function openModal(d, type) {
@@ -267,7 +281,7 @@
         if (editRef.mode === 'add' && name) {
             const newEv = { id: 'ID'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur, done: false };
             db.push(newEv);
-            postToGoogle(newEv); // Trimite și la Google
+            postToGoogle(newEv);
         } else if (editRef.mode === 'edit') {
             let ev = db.find(x => x.id === editRef.id);
             if(!name) db = db.filter(x => x.id !== editRef.id);
@@ -278,8 +292,8 @@
 
     function saveJ(k, v) { if(v.trim()) journal[k] = v; else delete journal[k]; save(); }
     function save() { 
-        localStorage.setItem('trident_db_v9', JSON.stringify(db)); 
-        localStorage.setItem('trident_j_v9', JSON.stringify(journal));
+        localStorage.setItem('trident_db_v12', JSON.stringify(db)); 
+        localStorage.setItem('trident_j_v12', JSON.stringify(journal));
     }
 
     function runCmd() {
@@ -290,7 +304,7 @@
             if (m) {
                 const newEv = { id: 'ID'+Date.now(), d: parseInt(m[1]), m: m[2]?parseInt(m[2])-1:vDate.getMonth(), y: vDate.getFullYear(), t: m[3]==='rl'?'m':(m[3]==='ra'?'a':'c'), n: m[4], dur: 1, done: false };
                 db.push(newEv);
-                postToGoogle(newEv); // Trimite și la Google
+                postToGoogle(newEv);
                 save(); render();
             }
         }
@@ -303,7 +317,7 @@
     function exportJSON() {
         const b = new Blob([JSON.stringify({tasks:db, journal:journal})], {type:'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = `trident_v9.json`; a.click();
+        a.download = `trident_v12.json`; a.click();
     }
 </script>
 </body>
