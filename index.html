@@ -1,17 +1,16 @@
-<!-- START OF FILE: index.html (Trident v23) -->
+<!-- START OF FILE: index.html (Trident v24) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v23</title>
+    <title>Trident v24</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #1e293b; --accent: #2563EB;
-            --weekend: #f0f9ff; /* Cul1: Albăstrui deschis pentru weekend */
-            --today-bg: #ffff00; /* Cul1: Galben pentru azi */
+            --weekend: #f0f9ff; --today-bg: #ffff00;
             --pink-pending: #fff1f2; --green-done: #dcfce7;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); }
@@ -28,11 +27,9 @@
         .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: 55px; }
         .c { border-right: 1px solid var(--border); padding: 4px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
         .c-fix { flex: 0 0 50px; justify-content: center; text-align: center; font-weight: bold; }
-        
         .c-sticky { position: sticky; left: 0; z-index: 100; background: inherit; }
         .c-date { left: 50px; border-right: 2px solid #cbd5e1; }
 
-        /* Cul1: Weekend si Today */
         .r.weekend { background-color: var(--weekend) !important; }
         .r.today { background-color: var(--today-bg) !important; outline: 2px solid orange; outline-offset: -2px; }
         .r.today .c-sticky { background-color: var(--today-bg) !important; }
@@ -53,7 +50,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="syncAllToGoogle()">v23</div>
+    <div class="v-badge" onclick="syncAllToGoogle()">v24</div>
     <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">...</div>
     <div style="display:flex; gap:6px; align-items: center;">
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
@@ -75,15 +72,15 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: /c 15 RL Pizza sau Notă /c 10">
+    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: /c 15 RL Pizza">
     <button onclick="runCommand()" style="margin-left:8px; padding:10px 25px; background:#2563EB; color:white; border:none; font-weight: bold; border-radius: 5px;">OK</button>
 </div>
 
 <div id="editModal" class="modal">
     <div class="m-box">
         <h3 id="modalTitle">Eveniment</h3>
-        <input type="text" id="evName" style="width:100%; padding:10px; margin-bottom:10px;">
-        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="evName" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc;">
+        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc;">
         <div style="display:flex; gap:10px;">
             <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="closeModal()">ANULARE</button>
             <button class="nav-btn" style="flex:1; background:var(--accent);" id="btnSave">SALVEAZĂ</button>
@@ -100,13 +97,13 @@
 
     function initApp() {
         try {
-            var sDB = localStorage.getItem('trident_db_v23') || localStorage.getItem('trident_db_v22');
+            var sDB = localStorage.getItem('trident_db_v24') || localStorage.getItem('trident_db_v23');
             if(sDB) localDB = JSON.parse(sDB);
-            var sJ = localStorage.getItem('trident_j_v23') || localStorage.getItem('trident_j_v22');
+            var sJ = localStorage.getItem('trident_j_v24') || localStorage.getItem('trident_j_v23');
             if(sJ) journalData = JSON.parse(sJ);
-            var sGD = localStorage.getItem('trident_g_done_v23') || localStorage.getItem('trident_g_done_v22');
+            var sGD = localStorage.getItem('trident_g_done_v24') || localStorage.getItem('trident_g_done_v23');
             if(sGD) gDoneMap = JSON.parse(sGD);
-            var sGE = localStorage.getItem('trident_g_cache_v23') || localStorage.getItem('trident_g_cache_v22');
+            var sGE = localStorage.getItem('trident_g_cache_v24') || localStorage.getItem('trident_g_cache_v23');
             if(sGE) googleEvents = JSON.parse(sGE);
 
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -117,16 +114,26 @@
         } catch(e) { console.error(e); }
     }
 
-    // Rs1 & Ra1: Detector avansat
+    // RS1 & Ra1: Detector Ultra-Senzitiv
     function detectType(summary, googleType, occurrences) {
-        var s = summary.toLowerCase();
-        // Daca apare de mai multe ori pe luna, e sigur Weekly/RS (Curenta)
-        if (occurrences > 1 || s.indexOf('rs') > -1) return 'c';
+        var s = summary.toLowerCase().trim();
         
-        var yearlyKeywords = ["ra", "zi", "ziua", "zile", "sf.", "sfânt", "adormirea", "nunta", "cununa", "botez", "aniversare"];
+        // Regula Ra1: Prefixele "zi", "ziua", "zile" sunt ANUALE
+        if (s.indexOf('zi ') === 0 || s.indexOf('ziua ') === 0 || s.indexOf('zile ') === 0) return 'a';
+
+        // Regula Rs1: Weekly / Frequent (cafea, spal pe cap etc)
+        var weeklyKeywords = ["rs", "cafea", "spăl", "spal", "vitamin", "transm", "transmit", "index"];
+        for(var i=0; i<weeklyKeywords.length; i++) {
+            if(s.indexOf(weeklyKeywords[i]) > -1) return 'c';
+        }
+        if (occurrences > 1) return 'c';
+        
+        // Altele anuale
+        var yearlyKeywords = ["ra", "sf.", "sfânt", "adormirea", "nunta", "cununa", "botez", "aniversare"];
         for(var i=0; i<yearlyKeywords.length; i++) {
             if(s.indexOf(yearlyKeywords[i]) > -1) return 'a';
         }
+        
         return googleType;
     }
 
@@ -141,9 +148,11 @@
             });
             var data = await resp.json();
             if (data.items) {
-                // Pas logic: Numaram aparitiile titlurilor pentru Rs1
                 var counts = {};
-                data.items.forEach(function(x){ counts[x.summary] = (counts[x.summary]||0) + 1; });
+                data.items.forEach(function(x){ 
+                    var key = x.summary.toLowerCase().trim();
+                    counts[key] = (counts[key]||0) + 1; 
+                });
 
                 googleEvents = data.items.map(function(ge) {
                     var startDt = new Date(ge.start.dateTime || ge.start.date);
@@ -155,16 +164,20 @@
                     if (ge.recurringEventId || ge.recurrence) {
                         type = (ge.start.date && !ge.start.dateTime) ? 'a' : 'm';
                     }
-                    type = detectType(ge.summary, type, counts[ge.summary]);
+                    type = detectType(ge.summary, type, counts[ge.summary.toLowerCase().trim()]);
+
+                    // C1: Fix link 404 - asigura URL absolut
+                    var link = ge.htmlLink;
+                    if(link && link.indexOf('http') !== 0) link = 'https://www.google.com/calendar/event?eid=' + ge.id;
 
                     return { 
                         id: 'G_'+ge.id, 
                         d: startDt.getDate(), m: startDt.getMonth(), y: startDt.getFullYear(), 
                         n: ge.summary, t: type, dur: duration, isG: true,
-                        link: ge.htmlLink // C1: Legatura catre Google Calendar
+                        link: link
                     };
                 });
-                localStorage.setItem('trident_g_cache_v23', JSON.stringify(googleEvents));
+                localStorage.setItem('trident_g_cache_v24', JSON.stringify(googleEvents));
                 renderCalendar();
             }
         } catch (e) { renderCalendar(); }
@@ -186,7 +199,7 @@
                 var hasRed = localDB.concat(googleEvents).some(function(e) {
                     var s = new Date(e.y, e.m, e.d), end = new Date(e.y, e.m, e.d + (e.dur||1)-1);
                     var cur = new Date(Y,M,i);
-                    var isVisible = (i === e.d || i === (e.d + e.dur - 1)); // Rn1
+                    var isVisible = (i === e.d || i === (e.d + e.dur - 1));
                     return isVisible && cur >= s && cur <= end && !(e.isG ? gDoneMap[e.id] : e.done);
                 });
                 if(hasRed || journalData[k] || i === now.getDate()) { firstBadDay = i; break; }
@@ -206,16 +219,12 @@
             var dayEvs = [];
             for(var j=0; j<allEvs.length; j++) {
                 var e = allEvs[j];
-                var startDay = e.d;
-                var lastDayOfEv = e.d + (e.dur || 1) - 1;
-                
-                // Rn1: Logica afisarii doar extremelor
-                if (d === startDay || d === lastDayOfEv) {
+                if (d === e.d || d === (e.d + (e.dur || 1) - 1)) {
                     var evStart = new Date(e.y, e.m, e.d);
                     var evEnd = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
                     if(curDt >= evStart && curDt <= evEnd) {
                         var displayObj = Object.assign({}, e);
-                        if (e.dur > 1 && d === startDay) displayObj.n = "(1:" + e.dur + ") " + e.n;
+                        if (e.dur > 1 && d === e.d) displayObj.n = "(1:" + e.dur + ") " + e.n;
                         dayEvs.push(displayObj);
                     }
                 }
@@ -241,7 +250,7 @@
             var e = list[i];
             if(e.t === type) {
                 var isDone = e.isG ? gDoneMap[e.id] : e.done;
-                // C1: Dublu click pentru Google Link
+                // C1: Deschidere sigura in tab nou
                 var dbClick = e.isG ? 'ondblclick="window.open(\''+e.link+'\', \'_blank\')"' : 'ondblclick="editItem(\''+e.id+'\')"';
                 res += '<div class="ev-item ' + (isDone ? "done" : "pending") + '" ' + dbClick + ' onclick="event.stopPropagation()">';
                 res += '<input type="checkbox" class="chk" ' + (isDone ? 'checked' : '') + ' onclick="event.stopPropagation(); tglStatus(\''+e.id+'\','+!!e.isG+')">';
@@ -252,40 +261,16 @@
     }
 
     function tglStatus(id, isG) {
-        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v23', JSON.stringify(gDoneMap)); }
+        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v24', JSON.stringify(gDoneMap)); }
         else { for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) localDB[i].done = !localDB[i].done; }
         saveAll(); renderCalendar();
     }
 
-    function saveAll() { localStorage.setItem('trident_db_v23', JSON.stringify(localDB)); localStorage.setItem('trident_j_v23', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v24', JSON.stringify(localDB)); localStorage.setItem('trident_j_v24', JSON.stringify(journalData)); }
     function saveJ(key, val) { journalData[key] = val; saveAll(); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); googleEvents = []; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
     function closeModal() { document.getElementById('editModal').style.display = 'none'; }
     function openEdit(d, type) { editRef = { mode: 'add', d: d, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type }; document.getElementById('modalTitle').innerText = "Ziua " + d; document.getElementById('evName').value = ""; document.getElementById('evDur').value = 1; document.getElementById('editModal').style.display = 'flex'; }
     function editItem(id) { if (id.indexOf('G_') === 0) return; var ev = null; for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) ev = localDB[i]; if(!ev) return; editRef = { mode: 'edit', id: id }; document.getElementById('modalTitle').innerText = "Editare"; document.getElementById('evName').value = ev.n; document.getElementById('evDur').value = ev.dur || 1; document.getElementById('editModal').style.display = 'flex'; }
-    document.getElementById('btnSave').onclick = function() { var name = document.getElementById('evName').value.trim(); var dur = parseInt(document.getElementById('evDur').value) || 1; if(editRef.mode === 'add' && name) localDB.push({ id: 'L' + Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur: dur, done: false }); else if(editRef.mode === 'edit') { for(var i=0; i<localDB.length; i++) if(localDB[i].id === editRef.id) { if(!name) localDB.splice(i, 1); else { localDB[i].n = name; localDB[i].dur = dur; } } } saveAll(); closeModal(); renderCalendar(); };
-
-    function calLogin() { window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + GCAL_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(GCAL_REDIRECT) + "&response_type=token&scope=" + encodeURIComponent("https://www.googleapis.com/auth/calendar.events") + "&prompt=select_account"; }
-    function handleGoogleCallback() { var p = new URLSearchParams(window.location.hash.substring(1)); var t = p.get('access_token'); if(t) { localStorage.setItem('gcal_token', t); window.location.hash = ""; syncGoogle(); } }
-
-    function runCommand() {
-        var inp = document.getElementById('cmdInput');
-        var val = inp.value;
-        // J1: Regex robust pentru text /c zi RL/RA
-        var m = val.match(/(.*?)\/c\s*(\d{1,2})\s*(RL|RA)?\s*(.*)/i);
-        if(m) {
-            var day = parseInt(m[2]);
-            var type = 'c';
-            if(m[3] && m[3].toUpperCase() === 'RL') type = 'm';
-            if(m[3] && m[3].toUpperCase() === 'RA') type = 'a';
-            var text = (m[1] + " " + m[4]).trim();
-            localDB.push({ id: 'L' + Date.now(), d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type, n: text, dur: 1, done: false });
-            saveAll(); renderCalendar();
-        }
-        inp.value = "";
-    }
-    async function syncAllToGoogle() { /* Placeholder v22 logic kept */ }
-</script>
-</body>
-</html>
+    document.getElementById('btnSave').onclick = function() { var name = document.getElementById('evName').value.trim(); var dur = parseInt(document.getElementById('evDur').value) || 1; if(editRef.mode === 'add' && name) localDB.push({ id: 'L' +
