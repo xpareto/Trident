@@ -1,18 +1,17 @@
-<!-- START OF FILE: index.html (Trident v20) -->
+<!-- START OF FILE: index.html (Trident v21) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v20</title>
+    <title>Trident v21</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #1e293b; --accent: #2563EB;
             --weekend: #f8fafc; --today-bg: #ffffcc;
-            --pink-pending: #fff1f2; 
-            --green-done: #dcfce7;
+            --pink-pending: #fff1f2; --green-done: #dcfce7;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); }
         
@@ -29,14 +28,20 @@
 
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 100px; }
         
-        /* Nc1: Aliniere la baza (flex-end) */
+        /* Nc1: Aliniere la baza (flex-end) forțată */
         .h-r { 
             display: flex; width: 100%;
             background: #f1f5f9; font-weight: bold; font-size: 11px; 
             position: sticky; top: 50px; z-index: 1500; 
             border-bottom: 2px solid #cbd5e1; height: 45px;
         }
-        .h-r .c { align-items: flex-end; padding-bottom: 8px; }
+        .h-r .c { 
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-end !important; 
+            align-items: center !important;
+            padding-bottom: 5px !important; 
+        }
 
         .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: 55px; }
         .c { border-right: 1px solid var(--border); padding: 4px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
@@ -69,7 +74,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="showLogs()">v20</div>
+    <div class="v-badge" onclick="alert('Trident v21 Active')">v21</div>
     <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">...</div>
     <div style="display:flex; gap:6px; align-items: center;">
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
@@ -91,11 +96,11 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: /c15rl Pizza">
+    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: /c15rl Pizza sau /c10 Plata regie">
     <button onclick="runCommand()" style="margin-left:8px; padding:10px 25px; background:#2563EB; color:white; border:none; font-weight: bold; border-radius: 5px;">OK</button>
 </div>
 
-<!-- Modal Adaugare/Editare (E1) -->
+<!-- Modal Adaugare/Editare -->
 <div id="editModal" class="modal">
     <div class="m-box">
         <h3 id="modalTitle">Eveniment</h3>
@@ -122,19 +127,16 @@
 
     function initApp() {
         try {
-            // Syn1: Citire date persistente (inclusiv cache Google)
-            var sDB = localStorage.getItem('trident_db_v20');
-            if(!sDB) sDB = localStorage.getItem('trident_db_v19');
+            var sDB = localStorage.getItem('trident_db_v21') || localStorage.getItem('trident_db_v20');
             if(sDB) localDB = JSON.parse(sDB);
             
-            var sJ = localStorage.getItem('trident_j_v20');
-            if(!sJ) sJ = localStorage.getItem('trident_j_v19');
+            var sJ = localStorage.getItem('trident_j_v21') || localStorage.getItem('trident_j_v20');
             if(sJ) journalData = JSON.parse(sJ);
 
-            var sGD = localStorage.getItem('trident_g_done_v20');
+            var sGD = localStorage.getItem('trident_g_done_v21') || localStorage.getItem('trident_g_done_v20');
             if(sGD) gDoneMap = JSON.parse(sGD);
 
-            var sGE = localStorage.getItem('trident_g_cache_v20');
+            var sGE = localStorage.getItem('trident_g_cache_v21') || localStorage.getItem('trident_g_cache_v20');
             if(sGE) googleEvents = JSON.parse(sGE);
 
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -144,7 +146,6 @@
                 handleGoogleCallback();
             } else {
                 renderCalendar();
-                if(googleEvents.length === 0) { /* Optional: auto-sync? */ }
             }
         } catch(e) { console.error(e); }
     }
@@ -165,30 +166,37 @@
         var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
         var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
         try {
+            // Pas 1: Fetch master events pentru a vedea regulile de recurenta (R2)
             var resp = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", {
                 headers: { Authorization: "Bearer " + token }
             });
             var data = await resp.json();
             if (data.items) {
                 googleEvents = data.items.map(function(ge) {
-                    var dt = new Date(ge.start.dateTime || ge.start.date);
-                    var type = 'c';
+                    var startDt = new Date(ge.start.dateTime || ge.start.date);
+                    var endDt = new Date(ge.end.dateTime || ge.end.date);
                     
-                    // Col3 + 5: Categorisire imbunatatita
-                    var summary = ge.summary.toLowerCase();
-                    if (ge.recurringEventId || (ge.recurrence && ge.recurrence[0])) {
-                        if (ge.recurrence && ge.recurrence[0].indexOf('MONTHLY') > -1) type = 'm';
-                        else if (ge.recurrence && ge.recurrence[0].indexOf('YEARLY') > -1) type = 'a';
-                    }
-                    // Daca Google nu ne spune, incercam sa deducem din context (ex: zile nastere)
-                    if (ge.start.date && !ge.start.dateTime) {
-                        if (summary.indexOf('zi de na') > -1 || summary.indexOf('birthday') > -1) type = 'a';
+                    // R1: Calcul durata reala (inclusiv pentru Google)
+                    var duration = Math.round((endDt - startDt) / (1000 * 60 * 60 * 24));
+                    if (duration < 1) duration = 1;
+
+                    var type = 'c';
+                    // R2: Identificare recurenta Google
+                    // Daca este o instanta a unui eveniment recurent, Google ne da recurringEventId
+                    if (ge.recurringEventId) {
+                        // Strategie: Daca se repeta, incercam sa deducem tipul. 
+                        // Majoritatea zilelor de nastere sunt Yearly, majoritatea facturilor sunt Monthly.
+                        if (ge.start.date && !ge.start.dateTime) type = 'a'; // Yearly implicit pentru All-day recurent
+                        else type = 'm'; // Monthly implicit pentru restul
                     }
 
-                    return { id: 'G_'+ge.id, d: dt.getDate(), m: dt.getMonth(), y: dt.getFullYear(), n: ge.summary, t: type, dur: 1, isG: true };
+                    return { 
+                        id: 'G_'+ge.id, 
+                        d: startDt.getDate(), m: startDt.getMonth(), y: startDt.getFullYear(), 
+                        n: ge.summary, t: type, dur: duration, isG: true 
+                    };
                 });
-                // Syn1: Salvare cache Google
-                localStorage.setItem('trident_g_cache_v20', JSON.stringify(googleEvents));
+                localStorage.setItem('trident_g_cache_v21', JSON.stringify(googleEvents));
                 renderCalendar();
             }
         } catch (e) { renderCalendar(); }
@@ -201,7 +209,6 @@
         var now = new Date(); now.setHours(0,0,0,0);
         
         var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
-        // Samb1: Corectat SA
         var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"];
         
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
@@ -217,12 +224,12 @@
             var dayEvs = [];
             for(var i=0; i<allEvs.length; i++) {
                 var e = allEvs[i];
-                var start = new Date(e.y, e.m, e.d);
-                var end = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
-                if(curDt >= start && curDt <= end) dayEvs.push(e);
+                // R1: Logica de afisare pe mai multe zile (Durata)
+                var evStart = new Date(e.y, e.m, e.d);
+                var evEnd = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
+                if(curDt >= evStart && curDt <= evEnd) dayEvs.push(e);
             }
 
-            // Eco1: Logica Econom imbunatatita (nu ascunde 31 daca are date)
             if (ecoMode && curDt < now && !isToday && dayEvs.length === 0 && !journalData[key]) continue;
 
             var rowClass = "r" + (isToday ? " today" : "") + (curDt.getDay() % 6 === 0 ? " weekend" : "");
@@ -231,7 +238,6 @@
             html += '<div class="c c-fix c-sticky">' + d + '</div>';
             html += '<div class="c c-fix c-sticky c-date">' + dayNames[curDt.getDay()] + '</div>';
             
-            // E1: Click pe coloana pentru adaugare
             html += '<div class="c" onclick="openEdit('+d+', \'m\')">' + drawItems(dayEvs, 'm') + '<div class="tap-area"></div></div>';
             html += '<div class="c" onclick="openEdit('+d+', \'c\')">' + drawItems(dayEvs, 'c');
             html += '<textarea class="j-box" placeholder="..." onclick="event.stopPropagation()" onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea><div class="tap-area"></div></div>';
@@ -253,7 +259,6 @@
                 var isDone = e.isG ? gDoneMap[e.id] : e.done;
                 var statusClass = isDone ? "done" : "pending";
                 var icon = e.isG ? "☁️ " : "• ";
-                
                 res += '<div class="ev-item ' + statusClass + '" onclick="event.stopPropagation(); editItem(\''+e.id+'\')">';
                 res += '<input type="checkbox" class="chk" ' + (isDone ? 'checked' : '') + ' onclick="event.stopPropagation(); tglStatus(\''+e.id+'\','+!!e.isG+')">';
                 res += '<span>' + icon + e.n + '</span></div>';
@@ -271,7 +276,7 @@
     }
 
     function editItem(id) {
-        if (id.indexOf('G_') === 0) return; // Nu editam Google direct aici
+        if (id.indexOf('G_') === 0) return;
         var ev = null;
         for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) ev = localDB[i];
         if(!ev) return;
@@ -301,7 +306,7 @@
     function tglStatus(id, isG) {
         if(isG) {
             gDoneMap[id] = !gDoneMap[id];
-            localStorage.setItem('trident_g_done_v20', JSON.stringify(gDoneMap));
+            localStorage.setItem('trident_g_done_v21', JSON.stringify(gDoneMap));
         } else {
             for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) localDB[i].done = !localDB[i].done;
         }
@@ -309,13 +314,13 @@
     }
 
     function saveAll() {
-        localStorage.setItem('trident_db_v20', JSON.stringify(localDB));
-        localStorage.setItem('trident_j_v20', JSON.stringify(journalData));
+        localStorage.setItem('trident_db_v21', JSON.stringify(localDB));
+        localStorage.setItem('trident_j_v21', JSON.stringify(journalData));
     }
 
     function saveJ(key, val) { journalData[key] = val; saveAll(); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); googleEvents = []; renderCalendar(); syncGoogle(); }
-    function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); location.reload(); }
+    function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
     function closeModal() { document.getElementById('editModal').style.display = 'none'; }
 
     function calLogin() {
