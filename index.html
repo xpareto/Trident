@@ -1,22 +1,21 @@
-<!-- START OF FILE: index.html (Trident v19) -->
+<!-- START OF FILE: index.html (Trident v20) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v19</title>
+    <title>Trident v20</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #1e293b; --accent: #2563EB;
             --weekend: #f8fafc; --today-bg: #ffffcc;
-            --pink-pending: #fff1f2; /* Roz deschis pentru sarcini noi */
-            --green-done: #dcfce7;    /* Verde deschis pentru finalizat */
+            --pink-pending: #fff1f2; 
+            --green-done: #dcfce7;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); }
         
-        /* Header principal */
         .hdr { 
             background: #1e293b; color: white; padding: 5px 10px; 
             display: flex; align-items: center; justify-content: space-between;
@@ -28,28 +27,27 @@
         .nav-btn.active { background: #2563EB; border-color: white; }
         .nav-btn.sync { background: #10b981; }
 
-        /* Capul de tabel fixat - REPARAT A1 */
-        .grid { display: block; width: 100%; min-width: 850px; }
+        .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 100px; }
+        
+        /* Nc1: Aliniere la baza (flex-end) */
         .h-r { 
             display: flex; width: 100%;
             background: #f1f5f9; font-weight: bold; font-size: 11px; 
             position: sticky; top: 50px; z-index: 1500; 
-            border-bottom: 2px solid #cbd5e1; height: 35px;
+            border-bottom: 2px solid #cbd5e1; height: 45px;
         }
+        .h-r .c { align-items: flex-end; padding-bottom: 8px; }
 
-        .r { display: flex; width: 100%; border-bottom: 1px solid #E2E8F0; min-height: 55px; }
-        
-        .c { border-right: 1px solid #E2E8F0; padding: 4px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: 55px; }
+        .c { border-right: 1px solid var(--border); padding: 4px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
         .c-fix { flex: 0 0 50px; justify-content: center; text-align: center; font-weight: bold; }
         
-        /* Sticky columns pentru NRZ si ZI */
         .c-sticky { position: sticky; left: 0; z-index: 100; background: #f8fafc; }
         .c-date { left: 50px; border-right: 2px solid #cbd5e1; }
 
         .r.weekend { background-color: var(--weekend); }
         .r.today { background-color: var(--today-bg); outline: 2px solid orange; outline-offset: -2px; }
 
-        /* Stil sarcini E1 & E2 */
         .ev-item { 
             display: flex; align-items: flex-start; gap: 5px; padding: 4px; 
             border-radius: 4px; margin-bottom: 3px; border: 1px solid rgba(0,0,0,0.05);
@@ -59,10 +57,10 @@
         .ev-item.done { background: var(--green-done); border-left: 3px solid #22c55e; opacity: 0.8; }
         
         .chk { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; margin-top: 1px; }
-        
         .j-box { width: 100%; border: none; background: transparent; font-size: 12px; font-style: italic; resize: none; outline: none; border-top: 1px dotted #ccc; margin-top: auto; padding-top: 4px; }
+        .tap-area { flex-grow: 1; min-height: 20px; cursor: pointer; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 20px; }
         .m-box { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; color: black; }
         .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f1f5f9; padding: 8px; display: flex; border-top: 2px solid #2563EB; z-index: 2000; }
     </style>
@@ -71,7 +69,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="showLogs()">v19</div>
+    <div class="v-badge" onclick="showLogs()">v20</div>
     <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">...</div>
     <div style="display:flex; gap:6px; align-items: center;">
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
@@ -97,6 +95,19 @@
     <button onclick="runCommand()" style="margin-left:8px; padding:10px 25px; background:#2563EB; color:white; border:none; font-weight: bold; border-radius: 5px;">OK</button>
 </div>
 
+<!-- Modal Adaugare/Editare (E1) -->
+<div id="editModal" class="modal">
+    <div class="m-box">
+        <h3 id="modalTitle">Eveniment</h3>
+        <input type="text" id="evName" placeholder="Nume eveniment" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc;">
+        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc;">
+        <div style="display:flex; gap:10px;">
+            <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="closeModal()">ANULARE</button>
+            <button class="nav-btn" style="flex:1; background:var(--accent);" id="btnSave">SALVEAZĂ</button>
+        </div>
+    </div>
+</div>
+
 <script>
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
@@ -105,21 +116,26 @@
     var localDB = [];
     var journalData = {};
     var googleEvents = [];
-    var gDoneMap = {}; // Stocheaza starea de "bifat" pentru Google Events
+    var gDoneMap = {}; 
     var ecoMode = false;
+    var editRef = null;
 
     function initApp() {
         try {
-            var sDB = localStorage.getItem('trident_db_v19');
-            if(!sDB) sDB = localStorage.getItem('trident_db_v18');
+            // Syn1: Citire date persistente (inclusiv cache Google)
+            var sDB = localStorage.getItem('trident_db_v20');
+            if(!sDB) sDB = localStorage.getItem('trident_db_v19');
             if(sDB) localDB = JSON.parse(sDB);
             
-            var sJ = localStorage.getItem('trident_j_v19');
-            if(!sJ) sJ = localStorage.getItem('trident_j_v18');
+            var sJ = localStorage.getItem('trident_j_v20');
+            if(!sJ) sJ = localStorage.getItem('trident_j_v19');
             if(sJ) journalData = JSON.parse(sJ);
 
-            var sGD = localStorage.getItem('trident_g_done_v19');
+            var sGD = localStorage.getItem('trident_g_done_v20');
             if(sGD) gDoneMap = JSON.parse(sGD);
+
+            var sGE = localStorage.getItem('trident_g_cache_v20');
+            if(sGE) googleEvents = JSON.parse(sGE);
 
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             document.getElementById('btnEco').className = ecoMode ? "nav-btn active" : "nav-btn";
@@ -128,6 +144,7 @@
                 handleGoogleCallback();
             } else {
                 renderCalendar();
+                if(googleEvents.length === 0) { /* Optional: auto-sync? */ }
             }
         } catch(e) { console.error(e); }
     }
@@ -155,25 +172,23 @@
             if (data.items) {
                 googleEvents = data.items.map(function(ge) {
                     var dt = new Date(ge.start.dateTime || ge.start.date);
-                    var type = 'c'; // Default: Curente
+                    var type = 'c';
                     
-                    // --- C1. LOGICA DE CATEGORISIRE INTELIGENTA ---
-                    if (ge.recurrence && ge.recurrence[0]) {
-                        if (ge.recurrence[0].indexOf('MONTHLY') > -1) type = 'm';
-                        else if (ge.recurrence[0].indexOf('YEARLY') > -1) type = 'a';
-                    } else if (ge.recurringEventId) {
-                        // Daca este o instanta, verificam dupa titlu sau alte indicii daca e lunar/anual
-                        // Momentan Google API returneaza recurenta doar pe master, in singleEvents=true 
-                        // putem deduce doar daca pastram o lista de masterIDs.
+                    // Col3 + 5: Categorisire imbunatatita
+                    var summary = ge.summary.toLowerCase();
+                    if (ge.recurringEventId || (ge.recurrence && ge.recurrence[0])) {
+                        if (ge.recurrence && ge.recurrence[0].indexOf('MONTHLY') > -1) type = 'm';
+                        else if (ge.recurrence && ge.recurrence[0].indexOf('YEARLY') > -1) type = 'a';
+                    }
+                    // Daca Google nu ne spune, incercam sa deducem din context (ex: zile nastere)
+                    if (ge.start.date && !ge.start.dateTime) {
+                        if (summary.indexOf('zi de na') > -1 || summary.indexOf('birthday') > -1) type = 'a';
                     }
 
-                    return { 
-                        id: 'G_'+ge.id, 
-                        d: dt.getDate(), m: dt.getMonth(), y: dt.getFullYear(), 
-                        n: ge.summary, t: type, dur: 1, 
-                        isG: true 
-                    };
+                    return { id: 'G_'+ge.id, d: dt.getDate(), m: dt.getMonth(), y: dt.getFullYear(), n: ge.summary, t: type, dur: 1, isG: true };
                 });
+                // Syn1: Salvare cache Google
+                localStorage.setItem('trident_g_cache_v20', JSON.stringify(googleEvents));
                 renderCalendar();
             }
         } catch (e) { renderCalendar(); }
@@ -184,8 +199,11 @@
         var Y = viewDate.getFullYear();
         var M = viewDate.getMonth();
         var now = new Date(); now.setHours(0,0,0,0);
+        
         var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
-        var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "S�"];
+        // Samb1: Corectat SA
+        var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"];
+        
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
         var lastDay = new Date(Y, M + 1, 0).getDate();
         var html = "";
@@ -204,6 +222,7 @@
                 if(curDt >= start && curDt <= end) dayEvs.push(e);
             }
 
+            // Eco1: Logica Econom imbunatatita (nu ascunde 31 daca are date)
             if (ecoMode && curDt < now && !isToday && dayEvs.length === 0 && !journalData[key]) continue;
 
             var rowClass = "r" + (isToday ? " today" : "") + (curDt.getDay() % 6 === 0 ? " weekend" : "");
@@ -212,11 +231,11 @@
             html += '<div class="c c-fix c-sticky">' + d + '</div>';
             html += '<div class="c c-fix c-sticky c-date">' + dayNames[curDt.getDay()] + '</div>';
             
-            // Cele 3 coloane principale
-            html += '<div class="c">' + drawItems(dayEvs, 'm') + '</div>';
-            html += '<div class="c">' + drawItems(dayEvs, 'c');
-            html += '<textarea class="j-box" placeholder="..." onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea></div>';
-            html += '<div class="c">' + drawItems(dayEvs, 'a') + '</div>';
+            // E1: Click pe coloana pentru adaugare
+            html += '<div class="c" onclick="openEdit('+d+', \'m\')">' + drawItems(dayEvs, 'm') + '<div class="tap-area"></div></div>';
+            html += '<div class="c" onclick="openEdit('+d+', \'c\')">' + drawItems(dayEvs, 'c');
+            html += '<textarea class="j-box" placeholder="..." onclick="event.stopPropagation()" onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea><div class="tap-area"></div></div>';
+            html += '<div class="c" onclick="openEdit('+d+', \'a\')">' + drawItems(dayEvs, 'a') + '<div class="tap-area"></div></div>';
             html += '</div>';
         }
         body.innerHTML = html;
@@ -226,7 +245,6 @@
         }
     }
 
-    // --- E1 & E2. DESENARE ELEMENTE CU CHECBOX SI CULORI ---
     function drawItems(list, type) {
         var res = "";
         for(var i=0; i<list.length; i++) {
@@ -234,32 +252,71 @@
             if(e.t === type) {
                 var isDone = e.isG ? gDoneMap[e.id] : e.done;
                 var statusClass = isDone ? "done" : "pending";
-                var icon = e.isG ? " " : "� ";
+                var icon = e.isG ? "☁️ " : "• ";
                 
-                res += '<div class="ev-item ' + statusClass + '">';
-                res += '<input type="checkbox" class="chk" ' + (isDone ? 'checked' : '') + ' onclick="tglStatus(\''+e.id+'\','+e.isG+')">';
+                res += '<div class="ev-item ' + statusClass + '" onclick="event.stopPropagation(); editItem(\''+e.id+'\')">';
+                res += '<input type="checkbox" class="chk" ' + (isDone ? 'checked' : '') + ' onclick="event.stopPropagation(); tglStatus(\''+e.id+'\','+!!e.isG+')">';
                 res += '<span>' + icon + e.n + '</span></div>';
             }
         }
         return res;
     }
 
+    function openEdit(d, type) {
+        editRef = { mode: 'add', d: d, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type };
+        document.getElementById('modalTitle').innerText = "Adăugare - Ziua " + d;
+        document.getElementById('evName').value = "";
+        document.getElementById('evDur').value = 1;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function editItem(id) {
+        if (id.indexOf('G_') === 0) return; // Nu editam Google direct aici
+        var ev = null;
+        for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) ev = localDB[i];
+        if(!ev) return;
+        editRef = { mode: 'edit', id: id };
+        document.getElementById('modalTitle').innerText = "Editare";
+        document.getElementById('evName').value = ev.n;
+        document.getElementById('evDur').value = ev.dur || 1;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    document.getElementById('btnSave').onclick = function() {
+        var name = document.getElementById('evName').value.trim();
+        var dur = parseInt(document.getElementById('evDur').value) || 1;
+        if(editRef.mode === 'add' && name) {
+            localDB.push({ id: 'L' + Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur: dur, done: false });
+        } else if(editRef.mode === 'edit') {
+            for(var i=0; i<localDB.length; i++) {
+                if(localDB[i].id === editRef.id) {
+                    if(!name) localDB.splice(i, 1);
+                    else { localDB[i].n = name; localDB[i].dur = dur; }
+                }
+            }
+        }
+        saveAll(); closeModal(); renderCalendar();
+    };
+
     function tglStatus(id, isG) {
         if(isG) {
             gDoneMap[id] = !gDoneMap[id];
-            localStorage.setItem('trident_g_done_v19', JSON.stringify(gDoneMap));
+            localStorage.setItem('trident_g_done_v20', JSON.stringify(gDoneMap));
         } else {
-            for(var i=0; i<localDB.length; i++) {
-                if(localDB[i].id === id) localDB[i].done = !localDB[i].done;
-            }
-            localStorage.setItem('trident_db_v19', JSON.stringify(localDB));
+            for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) localDB[i].done = !localDB[i].done;
         }
-        renderCalendar();
+        saveAll(); renderCalendar();
     }
 
-    function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); syncGoogle(); renderCalendar(); }
+    function saveAll() {
+        localStorage.setItem('trident_db_v20', JSON.stringify(localDB));
+        localStorage.setItem('trident_j_v20', JSON.stringify(journalData));
+    }
+
+    function saveJ(key, val) { journalData[key] = val; saveAll(); }
+    function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); googleEvents = []; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); location.reload(); }
-    function saveJ(key, val) { journalData[key] = val; localStorage.setItem('trident_j_v19', JSON.stringify(journalData)); }
+    function closeModal() { document.getElementById('editModal').style.display = 'none'; }
 
     function calLogin() {
         window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" +
@@ -278,8 +335,7 @@
             if(val.indexOf('ra') > -1) type = 'a';
             var text = val.split(' ').slice(1).join(' ');
             localDB.push({ id: 'L' + Date.now(), d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type, n: text, dur: 1, done: false });
-            localStorage.setItem('trident_db_v19', JSON.stringify(localDB));
-            renderCalendar();
+            saveAll(); renderCalendar();
         }
         inp.value = "";
     }
