@@ -1,28 +1,27 @@
-<!-- START OF FILE: index.html (Trident v25) -->
+<!-- START OF FILE: index.html (Trident v26) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v25</title>
+    <title>Trident v26</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #1e293b; --accent: #2563EB;
-            --weekend: #f0f9ff; --today-bg: #ffff00;
+            --weekend-bg: #dcfce7; /* Verde pal cerut */
+            --today-yellow: #ffff00; /* Galben cerut */
             --pink-pending: #fff1f2; --green-done: #dcfce7;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); }
         .hdr { background: #1e293b; color: white; padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 50px; }
         .v-badge { background: #2563EB; color: white; padding: 2px 5px; border-radius: 4px; font-size: 9px; font-weight: bold; cursor: pointer; }
         .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: bold; }
-        .nav-btn.active { background: #2563EB; border-color: white; }
         .nav-btn.sync { background: #10b981; }
 
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 100px; }
         .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 11px; position: sticky; top: 50px; z-index: 1500; border-bottom: 2px solid #cbd5e1; height: 45px; }
-        
         /* Nc1: Aliniere fixa la baza */
         .h-r .c { display: flex !important; justify-content: flex-end !important; align-items: center !important; padding-bottom: 6px !important; flex-direction: column; }
 
@@ -32,10 +31,11 @@
         .c-sticky { position: sticky; left: 0; z-index: 100; background: inherit; }
         .c-date { left: 50px; border-right: 2px solid #cbd5e1; }
 
-        /* Cul1: Culori */
-        .r.weekend { background-color: var(--weekend) !important; }
-        .r.today { background-color: var(--today-bg) !important; outline: 2px solid orange; outline-offset: -2px; }
-        .r.today .c-sticky { background-color: var(--today-bg) !important; }
+        /* Cul1: Logica Culori */
+        .r.weekend { background-color: var(--weekend-bg) !important; }
+        .r.today .c-fix { background-color: var(--weekend-bg) !important; } /* Col 1-2 verzi */
+        .r.today .c:not(.c-fix) { background-color: var(--today-yellow) !important; } /* Restul galben */
+        .r.today { outline: 2px solid orange; outline-offset: -2px; }
 
         .ev-item { display: flex; align-items: flex-start; gap: 5px; padding: 4px; border-radius: 4px; margin-bottom: 3px; border: 1px solid rgba(0,0,0,0.05); font-size: 12px; font-weight: 600; line-height: 1.2; cursor: pointer; }
         .ev-item.pending { background: var(--pink-pending); border-left: 3px solid #f43f5e; }
@@ -53,8 +53,8 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="alert('Trident v25 Ready')">v25</div>
-    <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">LUNA</div>
+    <div class="v-badge" onclick="syncGoogle()">v26</div>
+    <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">...</div>
     <div style="display:flex; gap:6px; align-items: center;">
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
         <button class="nav-btn sync" onclick="calLogin()">SYNC</button>
@@ -75,7 +75,7 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: Pizza /c 15 RL">
+    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Pizza /c 15 RL">
     <button onclick="runCommand()" style="margin-left:8px; padding:10px 25px; background:#2563EB; color:white; border:none; font-weight: bold; border-radius: 5px;">OK</button>
 </div>
 
@@ -100,32 +100,29 @@
 
     function initApp() {
         try {
-            var sDB = localStorage.getItem('trident_db_v25') || localStorage.getItem('trident_db_v24');
+            var sDB = localStorage.getItem('trident_db_v26') || localStorage.getItem('trident_db_v22');
             if(sDB) localDB = JSON.parse(sDB);
-            var sJ = localStorage.getItem('trident_j_v25') || localStorage.getItem('trident_j_v24');
+            var sJ = localStorage.getItem('trident_j_v26') || localStorage.getItem('trident_j_v22');
             if(sJ) journalData = JSON.parse(sJ);
-            var sGD = localStorage.getItem('trident_g_done_v25') || localStorage.getItem('trident_g_done_v24');
+            var sGD = localStorage.getItem('trident_g_done_v26') || localStorage.getItem('trident_g_done_v22');
             if(sGD) gDoneMap = JSON.parse(sGD);
-            var sGE = localStorage.getItem('trident_g_cache_v25') || localStorage.getItem('trident_g_cache_v24');
+            var sGE = localStorage.getItem('trident_g_cache_v26') || localStorage.getItem('trident_g_cache_v22');
             if(sGE) googleEvents = JSON.parse(sGE);
 
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             document.getElementById('btnEco').className = ecoMode ? "nav-btn active" : "nav-btn";
 
             if(window.location.hash.indexOf('access_token') > -1) handleGoogleCallback();
-            else renderCalendar();
-        } catch(e) { console.error("Init Error", e); }
+            else { renderCalendar(); if(localStorage.getItem('gcal_token')) syncGoogle(); }
+        } catch(e) { console.error(e); }
     }
 
-    function detectType(summary, googleType, occurrences) {
-        if (!summary) return googleType;
+    // C1 & Ra1: Reguli stricte de incadrare
+    function detectType(summary, googleType) {
+        if(!summary) return googleType;
         var s = summary.toLowerCase().trim();
-        if (s.indexOf('zi ') === 0 || s.indexOf('ziua ') === 0 || s.indexOf('zile ') === 0) return 'a';
-        var weeklyKeywords = ["rs", "cafea", "spăl", "spal", "vitamin", "transm", "transmit", "index"];
-        for(var i=0; i<weeklyKeywords.length; i++) { if(s.indexOf(weeklyKeywords[i]) > -1) return 'c'; }
-        if (occurrences > 1) return 'c';
-        var yearlyKeywords = ["ra", "sf.", "sfânt", "sfant", "adormirea", "nunta", "cununa", "botez", "aniversare"];
-        for(var i=0; i<yearlyKeywords.length; i++) { if(s.indexOf(yearlyKeywords[i]) > -1) return 'a'; }
+        if (s.indexOf('rl') > -1) return 'm';
+        if (s.indexOf('ra') > -1 || s.indexOf('sf.') > -1 || s.indexOf('sfânt') > -1 || s.indexOf('sfant') > -1 || s.indexOf('zi') === 0 || s.indexOf('nunta') > -1) return 'a';
         return googleType;
     }
 
@@ -140,9 +137,6 @@
             });
             var data = await resp.json();
             if (data.items) {
-                var counts = {};
-                data.items.forEach(function(x){ if(x.summary) { var k = x.summary.toLowerCase().trim(); counts[k] = (counts[k]||0) + 1; } });
-
                 googleEvents = data.items.map(function(ge) {
                     var sDt = new Date(ge.start.dateTime || ge.start.date);
                     var eDt = new Date(ge.end.dateTime || ge.end.date);
@@ -150,11 +144,10 @@
                     if (dur < 1) dur = 1;
                     var type = 'c';
                     if (ge.recurringEventId || ge.recurrence) type = (ge.start.date && !ge.start.dateTime) ? 'a' : 'm';
-                    type = detectType(ge.summary, type, counts[(ge.summary||"").toLowerCase().trim()]);
-                    var link = ge.htmlLink || ('https://www.google.com/calendar/event?eid=' + ge.id);
-                    return { id: 'G_'+ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: ge.summary || "(Fără titlu)", t: type, dur: dur, isG: true, link: link };
+                    type = detectType(ge.summary, type);
+                    return { id: 'G_'+ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: ge.summary, t: type, dur: dur, isG: true, link: ge.htmlLink };
                 });
-                localStorage.setItem('trident_g_cache_v25', JSON.stringify(googleEvents));
+                localStorage.setItem('trident_g_cache_v26', JSON.stringify(googleEvents));
                 renderCalendar();
             }
         } catch (e) { renderCalendar(); }
@@ -162,7 +155,6 @@
 
     function renderCalendar() {
         var body = document.getElementById('gridBody');
-        if(!body) return;
         var Y = viewDate.getFullYear(), M = viewDate.getMonth();
         var now = new Date(); now.setHours(0,0,0,0);
         var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
@@ -170,48 +162,54 @@
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
         var lastDay = new Date(Y, M + 1, 0).getDate();
         
-        var firstBadDay = 1;
+        // E1: Economie - cauta prima zi care "conteaza"
+        var firstDayToShow = 1;
         if(ecoMode && M === now.getMonth() && Y === now.getFullYear()) {
             for(var i=1; i<=lastDay; i++) {
                 var k = Y + "-" + M + "-" + i;
-                var hasRed = localDB.concat(googleEvents).some(function(e) {
-                    if (i !== e.d && i !== (e.d + e.dur - 1)) return false;
+                var hasIncomplete = localDB.concat(googleEvents).some(function(e) {
                     var s = new Date(e.y, e.m, e.d), end = new Date(e.y, e.m, e.d + (e.dur||1)-1);
                     var cur = new Date(Y,M,i);
-                    return cur >= s && cur <= end && !(e.isG ? gDoneMap[e.id] : e.done);
+                    var isBound = (i === e.d || i === (e.d + e.dur - 1));
+                    return isBound && cur >= s && cur <= end && !(e.isG ? gDoneMap[e.id] : e.done);
                 });
-                if(hasRed || journalData[k] || i === now.getDate()) { firstBadDay = i; break; }
+                if(hasIncomplete || journalData[k] || i === now.getDate()) { firstDayToShow = i; break; }
             }
         }
 
         var html = "";
         for (var d = 1; d <= lastDay; d++) {
-            try {
-                if (ecoMode && d < firstBadDay) continue;
-                var curDt = new Date(Y, M, d);
-                var isToday = (curDt.toDateString() === now.toDateString());
-                var key = Y + "-" + M + "-" + d;
-                var isWE = (curDt.getDay() === 0 || curDt.getDay() === 6);
-                var allEvs = localDB.concat(googleEvents);
-                var dayEvs = [];
-                for(var j=0; j<allEvs.length; j++) {
-                    var e = allEvs[j];
-                    if (d === e.d || d === (e.d + (e.dur || 1) - 1)) {
-                        var evS = new Date(e.y, e.m, e.d), evE = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
-                        if(curDt >= evS && curDt <= evE) {
-                            var disp = { id: e.id, n: e.n, t: e.t, isG: e.isG, done: e.done, link: e.link };
-                            if (e.dur > 1 && d === e.d) disp.n = "(1:" + e.dur + ") " + e.n;
-                            dayEvs.push(disp);
+            if (ecoMode && d < firstDayToShow) continue;
+            var curDt = new Date(Y, M, d);
+            var isToday = (curDt.toDateString() === now.toDateString());
+            var isWE = (curDt.getDay() === 0 || curDt.getDay() === 6);
+            var key = Y + "-" + M + "-" + d;
+            
+            var allEvs = localDB.concat(googleEvents);
+            var dayEvs = [];
+            for(var j=0; j<allEvs.length; j++) {
+                var e = allEvs[j];
+                var startDay = e.d, endDay = e.d + (e.dur || 1) - 1;
+                // Rn1 & Interval1: Afisare doar Start si Final
+                if (d === startDay || d === endDay) {
+                    var evS = new Date(e.y, e.m, e.d), evE = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
+                    if(curDt >= evS && curDt <= evE) {
+                        var disp = { id: e.id, n: e.n, t: e.t, isG: e.isG, done: e.done, link: e.link };
+                        if (e.dur > 1) {
+                            if (d === startDay) disp.n = "(1:" + e.dur + ") " + e.n;
+                            else disp.n = "<b>FINAL</b> " + e.n; // Interval1
                         }
+                        dayEvs.push(disp);
                     }
                 }
-                var rCls = "r" + (isToday ? " today" : "") + (isWE ? " weekend" : "");
-                html += '<div class="' + rCls + '" ' + (isToday ? 'id="scroll-today"' : '') + '>';
-                html += '<div class="c c-fix c-sticky">' + d + '</div><div class="c c-fix c-sticky c-date">' + dayNames[curDt.getDay()] + '</div>';
-                html += '<div class="c" onclick="openEdit('+d+',\'m\')">' + drawItems(dayEvs, 'm') + '<div class="tap-area"></div></div>';
-                html += '<div class="c" onclick="openEdit('+d+',\'c\')">' + drawItems(dayEvs, 'c') + '<textarea class="j-box" placeholder="..." onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea><div class="tap-area"></div></div>';
-                html += '<div class="c" onclick="openEdit('+d+',\'a\')">' + drawItems(dayEvs, 'a') + '<div class="tap-area"></div></div></div>';
-            } catch(err) { console.error("Row error", d, err); }
+            }
+
+            var rCls = "r" + (isToday ? " today" : "") + (isWE ? " weekend" : "");
+            html += '<div class="' + rCls + '" ' + (isToday ? 'id="scroll-today"' : '') + '>';
+            html += '<div class="c c-fix c-sticky">' + d + '</div><div class="c c-fix c-sticky c-date">' + dayNames[curDt.getDay()] + '</div>';
+            html += '<div class="c" onclick="openEdit('+d+',\'m\')">' + drawItems(dayEvs, 'm') + '<div class="tap-area"></div></div>';
+            html += '<div class="c" onclick="openEdit('+d+',\'c\')">' + drawItems(dayEvs, 'c') + '<textarea class="j-box" placeholder="..." onblur="saveJ(\''+key+'\', this.value)">' + (journalData[key] || '') + '</textarea><div class="tap-area"></div></div>';
+            html += '<div class="c" onclick="openEdit('+d+',\'a\')">' + drawItems(dayEvs, 'a') + '<div class="tap-area"></div></div></div>';
         }
         body.innerHTML = html;
         if(M === now.getMonth()) setTimeout(function() { document.getElementById('scroll-today')?.scrollIntoView({block: "center", behavior: "smooth"}); }, 500);
@@ -233,12 +231,12 @@
     }
 
     function tglStatus(id, isG) {
-        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v25', JSON.stringify(gDoneMap)); }
+        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v26', JSON.stringify(gDoneMap)); }
         else { for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) localDB[i].done = !localDB[i].done; }
         saveAll(); renderCalendar();
     }
 
-    function saveAll() { localStorage.setItem('trident_db_v25', JSON.stringify(localDB)); localStorage.setItem('trident_j_v25', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v26', JSON.stringify(localDB)); localStorage.setItem('trident_j_v26', JSON.stringify(journalData)); }
     function saveJ(key, val) { journalData[key] = val; saveAll(); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); googleEvents = []; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
@@ -248,7 +246,21 @@
     document.getElementById('btnSave').onclick = function() { var name = document.getElementById('evName').value.trim(); var dur = parseInt(document.getElementById('evDur').value) || 1; if(editRef.mode === 'add' && name) localDB.push({ id: 'L' + Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur: dur, done: false }); else if(editRef.mode === 'edit') { for(var i=0; i<localDB.length; i++) if(localDB[i].id === editRef.id) { if(!name) localDB.splice(i, 1); else { localDB[i].n = name; localDB[i].dur = dur; } } } saveAll(); closeModal(); renderCalendar(); };
     function calLogin() { window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + GCAL_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(GCAL_REDIRECT) + "&response_type=token&scope=" + encodeURIComponent("https://www.googleapis.com/auth/calendar.events") + "&prompt=select_account"; }
     function handleGoogleCallback() { var p = new URLSearchParams(window.location.hash.substring(1)); var t = p.get('access_token'); if(t) { localStorage.setItem('gcal_token', t); window.location.hash = ""; syncGoogle(); } }
-    function runCommand() { var inp = document.getElementById('cmdInput'); var val = inp.value; var m = val.match(/(.*?)\/c\s*(\d{1,2})\s*(RL|RA)?\s*(.*)/i); if(m) { var day = parseInt(m[2]); var type = 'c'; if(m[3] && m[3].toUpperCase() === 'RL') type = 'm'; if(m[3] && m[3].toUpperCase() === 'RA') type = 'a'; var text = (m[1] + " " + m[4]).trim(); localDB.push({ id: 'L' + Date.now(), d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type, n: text, dur: 1, done: false }); saveAll(); renderCalendar(); } inp.value = ""; }
+    function runCommand() {
+        var inp = document.getElementById('cmdInput');
+        var val = inp.value;
+        var m = val.match(/(.*?)\/c\s*(\d{1,2})\s*(RL|RA)?\s*(.*)/i);
+        if(m) {
+            var day = parseInt(m[2]);
+            var type = 'c';
+            if(m[3] && m[3].toUpperCase() === 'RL') type = 'm';
+            if(m[3] && m[3].toUpperCase() === 'RA') type = 'a';
+            var text = (m[1] + " " + m[4]).trim();
+            localDB.push({ id: 'L' + Date.now(), d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type, n: text, dur: 1, done: false });
+            saveAll(); renderCalendar();
+        }
+        inp.value = "";
+    }
 </script>
 </body>
 </html>
