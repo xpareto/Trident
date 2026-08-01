@@ -1,17 +1,17 @@
-<!-- START OF FILE: index.html (Trident v26) -->
+<!-- START OF FILE: index.html (Trident v27) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v26</title>
+    <title>Trident v27</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #E2E8F0;
             --text: #1e293b; --accent: #2563EB;
-            --weekend-bg: #dcfce7; /* Verde pal cerut */
-            --today-yellow: #ffff00; /* Galben cerut */
+            --weekend-bg: #dcfce7; /* Verde pal */
+            --today-yellow: #ffff00; /* Galben */
             --pink-pending: #fff1f2; --green-done: #dcfce7;
         }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); }
@@ -21,8 +21,9 @@
         .nav-btn.sync { background: #10b981; }
 
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 100px; }
+        
+        /* A1 & Nc1: Header inghetat cu aliniere la baza */
         .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 11px; position: sticky; top: 50px; z-index: 1500; border-bottom: 2px solid #cbd5e1; height: 45px; }
-        /* Nc1: Aliniere fixa la baza */
         .h-r .c { display: flex !important; justify-content: flex-end !important; align-items: center !important; padding-bottom: 6px !important; flex-direction: column; }
 
         .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: 55px; }
@@ -31,10 +32,10 @@
         .c-sticky { position: sticky; left: 0; z-index: 100; background: inherit; }
         .c-date { left: 50px; border-right: 2px solid #cbd5e1; }
 
-        /* Cul1: Logica Culori */
+        /* Cul1: Weekend si Today */
         .r.weekend { background-color: var(--weekend-bg) !important; }
-        .r.today .c-fix { background-color: var(--weekend-bg) !important; } /* Col 1-2 verzi */
-        .r.today .c:not(.c-fix) { background-color: var(--today-yellow) !important; } /* Restul galben */
+        .r.today .c-fix { background-color: var(--weekend-bg) !important; } /* Col 1-2 Verzi */
+        .r.today .c:not(.c-fix) { background-color: var(--today-yellow) !important; } /* Restul Galben */
         .r.today { outline: 2px solid orange; outline-offset: -2px; }
 
         .ev-item { display: flex; align-items: flex-start; gap: 5px; padding: 4px; border-radius: 4px; margin-bottom: 3px; border: 1px solid rgba(0,0,0,0.05); font-size: 12px; font-weight: 600; line-height: 1.2; cursor: pointer; }
@@ -53,7 +54,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="syncGoogle()">v26</div>
+    <div class="v-badge" onclick="location.reload()">v27</div>
     <div id="mLabel" style="font-weight: bold; font-size: 14px; text-transform: uppercase; flex-grow: 1; text-align: center;">...</div>
     <div style="display:flex; gap:6px; align-items: center;">
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECONOM</button>
@@ -75,7 +76,7 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Pizza /c 15 RL">
+    <input type="text" id="cmdInput" style="flex:1; padding:12px; border:1px solid #ccc; font-size: 16px;" placeholder="Ex: Cafea /c 15 RS">
     <button onclick="runCommand()" style="margin-left:8px; padding:10px 25px; background:#2563EB; color:white; border:none; font-weight: bold; border-radius: 5px;">OK</button>
 </div>
 
@@ -100,13 +101,13 @@
 
     function initApp() {
         try {
-            var sDB = localStorage.getItem('trident_db_v26') || localStorage.getItem('trident_db_v22');
+            var sDB = localStorage.getItem('trident_db_v27') || localStorage.getItem('trident_db_v26');
             if(sDB) localDB = JSON.parse(sDB);
-            var sJ = localStorage.getItem('trident_j_v26') || localStorage.getItem('trident_j_v22');
+            var sJ = localStorage.getItem('trident_j_v27') || localStorage.getItem('trident_j_v26');
             if(sJ) journalData = JSON.parse(sJ);
-            var sGD = localStorage.getItem('trident_g_done_v26') || localStorage.getItem('trident_g_done_v22');
+            var sGD = localStorage.getItem('trident_g_done_v27') || localStorage.getItem('trident_g_done_v26');
             if(sGD) gDoneMap = JSON.parse(sGD);
-            var sGE = localStorage.getItem('trident_g_cache_v26') || localStorage.getItem('trident_g_cache_v22');
+            var sGE = localStorage.getItem('trident_g_cache_v27') || localStorage.getItem('trident_g_cache_v26');
             if(sGE) googleEvents = JSON.parse(sGE);
 
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -117,12 +118,23 @@
         } catch(e) { console.error(e); }
     }
 
-    // C1 & Ra1: Reguli stricte de incadrare
-    function detectType(summary, googleType) {
+    // C1: Detector Prefixe RNL / RNS / RA
+    function detectType(summary, googleType, occurrences) {
         if(!summary) return googleType;
-        var s = summary.toLowerCase().trim();
-        if (s.indexOf('rl') > -1) return 'm';
-        if (s.indexOf('ra') > -1 || s.indexOf('sf.') > -1 || s.indexOf('sfânt') > -1 || s.indexOf('sfant') > -1 || s.indexOf('zi') === 0 || s.indexOf('nunta') > -1) return 'a';
+        var s = summary.toUpperCase().trim();
+        
+        // 1. Verificare prefixe stricte (Regula ta principala)
+        // Cautam formatul R[numar]L, R[numar]S, RA, RL, RS
+        if (/^R\d*S/.test(s)) return 'c'; // Saptamanale -> Curente
+        if (/^R\d*L/.test(s)) return 'm'; // Lunare -> Lunare
+        if (/^RA/.test(s)) return 'a';    // Anuale -> Anuale
+        
+        // 2. Regula Ra1: Aniversari si Sfinte
+        if (s.indexOf('SF.') === 0 || s.indexOf('SFÂNT') === 0 || s.indexOf('ZI') === 0 || s.indexOf('NUNTA') > -1) return 'a';
+        
+        // 3. Rs1: Frecventa mare fara prefix -> Curente (Cafeaua)
+        if (occurrences > 1) return 'c';
+
         return googleType;
     }
 
@@ -137,6 +149,9 @@
             });
             var data = await resp.json();
             if (data.items) {
+                var counts = {};
+                data.items.forEach(function(x){ if(x.summary) { var k = x.summary.toUpperCase(); counts[k] = (counts[k]||0) + 1; } });
+
                 googleEvents = data.items.map(function(ge) {
                     var sDt = new Date(ge.start.dateTime || ge.start.date);
                     var eDt = new Date(ge.end.dateTime || ge.end.date);
@@ -144,10 +159,12 @@
                     if (dur < 1) dur = 1;
                     var type = 'c';
                     if (ge.recurringEventId || ge.recurrence) type = (ge.start.date && !ge.start.dateTime) ? 'a' : 'm';
-                    type = detectType(ge.summary, type);
+                    
+                    type = detectType(ge.summary, type, counts[(ge.summary||"").toUpperCase()]);
+
                     return { id: 'G_'+ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: ge.summary, t: type, dur: dur, isG: true, link: ge.htmlLink };
                 });
-                localStorage.setItem('trident_g_cache_v26', JSON.stringify(googleEvents));
+                localStorage.setItem('trident_g_cache_v27', JSON.stringify(googleEvents));
                 renderCalendar();
             }
         } catch (e) { renderCalendar(); }
@@ -157,23 +174,22 @@
         var body = document.getElementById('gridBody');
         var Y = viewDate.getFullYear(), M = viewDate.getMonth();
         var now = new Date(); now.setHours(0,0,0,0);
-        var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
         var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"];
+        var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
         var lastDay = new Date(Y, M + 1, 0).getDate();
         
-        // E1: Economie - cauta prima zi care "conteaza"
         var firstDayToShow = 1;
         if(ecoMode && M === now.getMonth() && Y === now.getFullYear()) {
             for(var i=1; i<=lastDay; i++) {
                 var k = Y + "-" + M + "-" + i;
-                var hasIncomplete = localDB.concat(googleEvents).some(function(e) {
+                var hasRed = localDB.concat(googleEvents).some(function(e) {
+                    if (i !== e.d && i !== (e.d + e.dur - 1)) return false;
                     var s = new Date(e.y, e.m, e.d), end = new Date(e.y, e.m, e.d + (e.dur||1)-1);
                     var cur = new Date(Y,M,i);
-                    var isBound = (i === e.d || i === (e.d + e.dur - 1));
-                    return isBound && cur >= s && cur <= end && !(e.isG ? gDoneMap[e.id] : e.done);
+                    return cur >= s && cur <= end && !(e.isG ? gDoneMap[e.id] : e.done);
                 });
-                if(hasIncomplete || journalData[k] || i === now.getDate()) { firstDayToShow = i; break; }
+                if(hasRed || journalData[k] || i === now.getDate()) { firstDayToShow = i; break; }
             }
         }
 
@@ -190,14 +206,14 @@
             for(var j=0; j<allEvs.length; j++) {
                 var e = allEvs[j];
                 var startDay = e.d, endDay = e.d + (e.dur || 1) - 1;
-                // Rn1 & Interval1: Afisare doar Start si Final
+                // Rn1 & Interval1: Doar Start si FINAL
                 if (d === startDay || d === endDay) {
                     var evS = new Date(e.y, e.m, e.d), evE = new Date(e.y, e.m, e.d + (e.dur || 1) - 1);
                     if(curDt >= evS && curDt <= evE) {
                         var disp = { id: e.id, n: e.n, t: e.t, isG: e.isG, done: e.done, link: e.link };
                         if (e.dur > 1) {
                             if (d === startDay) disp.n = "(1:" + e.dur + ") " + e.n;
-                            else disp.n = "<b>FINAL</b> " + e.n; // Interval1
+                            else disp.n = "<b>FINAL</b> " + e.n;
                         }
                         dayEvs.push(disp);
                     }
@@ -231,12 +247,12 @@
     }
 
     function tglStatus(id, isG) {
-        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v26', JSON.stringify(gDoneMap)); }
+        if(isG) { gDoneMap[id] = !gDoneMap[id]; localStorage.setItem('trident_g_done_v27', JSON.stringify(gDoneMap)); }
         else { for(var i=0; i<localDB.length; i++) if(localDB[i].id === id) localDB[i].done = !localDB[i].done; }
         saveAll(); renderCalendar();
     }
 
-    function saveAll() { localStorage.setItem('trident_db_v26', JSON.stringify(localDB)); localStorage.setItem('trident_j_v26', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v27', JSON.stringify(localDB)); localStorage.setItem('trident_j_v27', JSON.stringify(journalData)); }
     function saveJ(key, val) { journalData[key] = val; saveAll(); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth() + dir); googleEvents = []; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
@@ -246,16 +262,21 @@
     document.getElementById('btnSave').onclick = function() { var name = document.getElementById('evName').value.trim(); var dur = parseInt(document.getElementById('evDur').value) || 1; if(editRef.mode === 'add' && name) localDB.push({ id: 'L' + Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: name, dur: dur, done: false }); else if(editRef.mode === 'edit') { for(var i=0; i<localDB.length; i++) if(localDB[i].id === editRef.id) { if(!name) localDB.splice(i, 1); else { localDB[i].n = name; localDB[i].dur = dur; } } } saveAll(); closeModal(); renderCalendar(); };
     function calLogin() { window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + GCAL_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(GCAL_REDIRECT) + "&response_type=token&scope=" + encodeURIComponent("https://www.googleapis.com/auth/calendar.events") + "&prompt=select_account"; }
     function handleGoogleCallback() { var p = new URLSearchParams(window.location.hash.substring(1)); var t = p.get('access_token'); if(t) { localStorage.setItem('gcal_token', t); window.location.hash = ""; syncGoogle(); } }
+    
     function runCommand() {
         var inp = document.getElementById('cmdInput');
         var val = inp.value;
-        var m = val.match(/(.*?)\/c\s*(\d{1,2})\s*(RL|RA)?\s*(.*)/i);
+        // J1: Suport text + /c + zi + RL/RA/RS/R3L/R4S etc
+        var m = val.match(/(.*?)\/c\s*(\d{1,2})\s*(R\d*[SLA])?\s*(.*)/i);
         if(m) {
             var day = parseInt(m[2]);
+            var pref = m[3] ? m[3].toUpperCase() : '';
             var type = 'c';
-            if(m[3] && m[3].toUpperCase() === 'RL') type = 'm';
-            if(m[3] && m[3].toUpperCase() === 'RA') type = 'a';
-            var text = (m[1] + " " + m[4]).trim();
+            if (/^R\d*L/.test(pref)) type = 'm';
+            if (/^RA/.test(pref)) type = 'a';
+            if (/^R\d*S/.test(pref)) type = 'c';
+            
+            var text = (pref + " " + m[1] + " " + m[4]).trim();
             localDB.push({ id: 'L' + Date.now(), d: day, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: type, n: text, dur: 1, done: false });
             saveAll(); renderCalendar();
         }
