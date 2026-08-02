@@ -1,21 +1,21 @@
-<!-- START OF FILE: index.html (Trident v32) -->
+<!-- START OF FILE: index.html (Trident v33) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v32</title>
+    <title>Trident v33</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
             --text: #1e293b; --accent: #2563EB;
-            --weekend-bg: #f0fdf4; --today-yellow: #ffff00;
+            --weekend-bg: #dcfce7; --today-yellow: #ffff00;
             --pink-pending: #fff1f2; --green-done: #dcfce7;
             --row-h: 48px; --f-size: 11px;
         }
-        body.compact { --row-h: 38px; --f-size: 10px; }
-        body.mini { --row-h: 28px; --f-size: 9px; }
+        body.compact { --row-h: 36px; --f-size: 10px; }
+        body.mini { --row-h: 26px; --f-size: 9px; }
 
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); overflow-x: hidden; }
         .hdr { background: #1e293b; color: white; padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 45px; }
@@ -29,7 +29,6 @@
         .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: var(--row-h); }
         .c { border-right: 1px solid var(--border); padding: 1px 2px; flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; min-width: 0; }
         
-        /* C12: Latime redusa Nr si Zi */
         .c-fix-nr { flex: 0 0 24px; justify-content: center; text-align: center; font-weight: bold; font-size: 11px; }
         .c-fix-zi { flex: 0 0 32px; justify-content: center; text-align: center; font-weight: bold; font-size: 10px; }
         .c-sticky { position: sticky; left: 0; z-index: 100; background: inherit; }
@@ -60,7 +59,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v32</div>
+    <div class="v-badge" onclick="location.reload()">v33</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z]</button>
@@ -83,16 +82,15 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="Ex: 15 RL Gaz | 15 N Nota">
+    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="Zi N Text (Notă) | Zi RL Text (Lunar)">
     <button onclick="runCommand()" style="margin-left:5px; padding:10px; background:#2563EB; color:white; border:none; font-weight:bold; border-radius:5px;">OK</button>
 </div>
 
-<!-- Modal Adaugare/Editare (A1) -->
 <div id="editModal" class="modal">
     <div class="m-box">
-        <h3 id="modalTitle">Eveniment Nou</h3>
-        <input type="text" id="evName" placeholder="Nume eveniment" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc;">
-        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc;">
+        <h3 id="modalTitle">Editare</h3>
+        <input type="text" id="evName" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc;">
+        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc;">
         <div style="display:flex; gap:10px;">
             <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="closeModal()">ANULARE</button>
             <button class="nav-btn" style="flex:1; background:var(--accent);" id="btnSave">SALVEAZĂ</button>
@@ -100,11 +98,10 @@
     </div>
 </div>
 
-<!-- Modal Descriere (Tx1) -->
 <div id="descModal" class="modal">
     <div class="m-box">
-        <h3 id="descTitle" style="font-size: 14px; margin:0;">Descriere Detaliată</h3>
-        <textarea id="descText" placeholder="Adaugă detalii..."></textarea>
+        <h3 id="descTitle" style="font-size: 14px; margin:0;">Detalii</h3>
+        <textarea id="descText"></textarea>
         <div style="display:flex; gap:10px; margin-top:10px;">
             <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="closeModal()">ÎNCHIDE</button>
             <button class="nav-btn" style="flex:1; background:#2563EB;" id="btnSaveDesc">SALVEAZĂ</button>
@@ -115,13 +112,12 @@
 <script>
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
-    var viewDate = new Date();
-    var localDB = [], journalData = {}, googleEvents = [], gDoneMap = {}, ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
+    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], gDoneMap = {}, ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v32') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v32') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v33') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v33') || '{}');
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
@@ -130,15 +126,38 @@
         } catch(e) { console.error(e); }
     }
 
-    // C123: Motor sortare restabilit
-    function detectType(summary, googleType, occurrences) {
-        if(!summary) return googleType;
-        var s = summary.toUpperCase().trim();
+    // --- PARSARE RECURENTA (RFC 5545) ---
+    function parseRecurrence(recurrenceArray) {
+        if (!recurrenceArray || !recurrenceArray.length) return null;
+        var rruleLine = "";
+        for(var i=0; i<recurrenceArray.length; i++) { if(recurrenceArray[i].indexOf('RRULE:') === 0) rruleLine = recurrenceArray[i]; }
+        if (!rruleLine) return null;
+        
+        var cleanLine = rruleLine.replace('RRULE:', '');
+        var parts = cleanLine.split(';');
+        var map = {};
+        for(var j=0; j<parts.length; j++) {
+            var kv = parts[j].split('=');
+            map[kv[0]] = kv[1];
+        }
+        return { freq: map['FREQ'], interval: parseInt(map['INTERVAL'] || '1') };
+    }
+
+    // --- DETECTOR TIP COLOANA IMBUNATATIT ---
+    function detectTypeByRRULE(summary, rruleObj) {
+        var s = (summary || "").toUpperCase();
+        // Prioritate RA/RL/RS in text
         if (/^R\d*L/.test(s)) return 'm';
         if (/^R\d*S/.test(s) || /^RS/.test(s)) return 'c';
         if (/^RA/.test(s) || /^R\d*A/.test(s) || /SF\.|SFÂNT|SFANT|ZI |ZIUA |ZILE |NUNTA|CUNUNIE|BOTEZ|ORTODOX|CATOLIC/.test(s)) return 'a';
-        if (occurrences > 1) return 'c';
-        return googleType;
+
+        // Logica bazata pe FREQ (din Google)
+        if (rruleObj) {
+            if (rruleObj.freq === 'YEARLY') return 'a';
+            if (rruleObj.freq === 'MONTHLY') return 'm';
+            if (rruleObj.freq === 'WEEKLY' || rruleObj.freq === 'DAILY') return 'c';
+        }
+        return 'c';
     }
 
     async function syncGoogle() {
@@ -146,23 +165,36 @@
         if (!token) return;
         var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
         var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        
         try {
-            var resp = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
-            var data = await resp.json();
-            if (data.items) {
-                var counts = {};
-                data.items.forEach(function(x){ if(x.summary) { var k = x.summary.toUpperCase(); counts[k] = (counts[k]||0) + 1; } });
-                googleEvents = data.items.map(function(ge) {
+            // 1. Luam instanțele lunii
+            var r1 = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
+            var d1 = await r1.json();
+            
+            // 2. Luam Master events (pentru RRULE)
+            var r2 = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=false", { headers: { Authorization: "Bearer " + token } });
+            var d2 = await r2.json();
+            
+            var masterMap = {};
+            if(d2.items) {
+                d2.items.forEach(function(m){ masterMap[m.id] = parseRecurrence(m.recurrence); });
+            }
+
+            if (d1.items) {
+                googleEvents = d1.items.map(function(ge) {
                     var sDt = new Date(ge.start.dateTime || ge.start.date), eDt = new Date(ge.end.dateTime || ge.end.date);
                     var dur = Math.round((eDt - sDt) / 86400000) || 1;
                     var title = ge.summary || "", isDone = title.indexOf("[OK]") > -1, cleanT = title.replace("[OK]", "").trim();
-                    // C123: Aplicam detectType aici
-                    var type = detectType(cleanT, (ge.recurrence || ge.recurringEventId) ? 'm' : 'c', counts[cleanT.toUpperCase()]);
+                    
+                    // Gasim RRULE-ul masterului
+                    var rrule = masterMap[ge.recurringEventId] || parseRecurrence(ge.recurrence);
+                    var type = detectTypeByRRULE(cleanT, rrule);
+
                     return { id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: cleanT, t: type, dur: dur, isG: true, done: isDone, link: ge.htmlLink, desc: ge.description || "" };
                 });
                 renderCalendar();
             }
-        } catch (e) { renderCalendar(); }
+        } catch (e) { console.error("Sync Error", e); renderCalendar(); }
     }
 
     function renderCalendar() {
@@ -203,61 +235,28 @@
         if(M === now.getMonth()) setTimeout(function(){ document.getElementById('scroll-today')?.scrollIntoView({block:"center"}); }, 500);
     }
 
-    // S1: Stergere cu afisare text
+    // Funcții neschimbate din v32 pentru stabilitate
     async function delEv(id, isG) {
-        var all = localDB.concat(googleEvents);
-        var ev = all.find(function(x){return x.id === id});
-        if(!ev) return;
+        var all = localDB.concat(googleEvents); var ev = all.find(function(x){return x.id === id}); if(!ev) return;
         if(!confirm("Ștergi rândul: " + ev.n + "?")) return;
-        if(isG) {
-            var token = localStorage.getItem('gcal_token');
-            await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/" + id, { method: 'DELETE', headers: { Authorization: "Bearer " + token } });
-            syncGoogle();
-        } else {
-            localDB = localDB.filter(function(x){return x.id !== id});
-            saveAll(); renderCalendar();
-        }
+        if(isG) { var tk = localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/" + id, { method: 'DELETE', headers: { Authorization: "Bearer " + tk } }); syncGoogle(); }
+        else { localDB = localDB.filter(function(x){return x.id !== id}); saveAll(); renderCalendar(); }
     }
-
-    function openAdd(d, t) {
-        editRef = { mode: 'add', d: d, m: viewDate.getMonth(), y: viewDate.getFullYear(), t: t };
-        document.getElementById('modalTitle').innerText = "Adăugare Ziua " + d;
-        document.getElementById('evName').value = ""; document.getElementById('evDur').value = 1;
-        document.getElementById('editModal').style.display = 'flex';
-    }
-
-    document.getElementById('btnSave').onclick = function() {
-        var n = document.getElementById('evName').value.trim();
-        var dur = parseInt(document.getElementById('evDur').value) || 1;
-        if(n) localDB.push({ id: 'L'+Date.now(), d: editRef.d, m: editRef.m, y: editRef.y, t: editRef.t, n: n, dur: dur, done: false });
-        saveAll(); closeModal(); renderCalendar();
-    };
-
+    function openAdd(d, t) { editRef = { mode:'add', d:d, m:viewDate.getMonth(), y:viewDate.getFullYear(), t:t }; document.getElementById('modalTitle').innerText="Ziua "+d; document.getElementById('evName').value=""; document.getElementById('evDur').value=1; document.getElementById('editModal').style.display='flex'; }
+    document.getElementById('btnSave').onclick = function() { var n = document.getElementById('evName').value.trim(); var dur = parseInt(document.getElementById('evDur').value)||1; if(n) localDB.push({ id:'L'+Date.now(), d:editRef.d, m:editRef.m, y:editRef.y, t:editRef.t, n:n, dur:dur, done:false }); saveAll(); closeModal(); renderCalendar(); };
     function runCommand() {
         var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
         var mDel = val.match(/^(\d{1,2})\s*D\s*([1-3])\s*(\d+)/i);
-        if(mDel) {
-            var d = parseInt(mDel[1]), colIdx = parseInt(mDel[2]), rowIdx = parseInt(mDel[3]);
-            var type = colIdx === 1 ? 'm' : colIdx === 2 ? 'c' : 'a';
-            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type; });
-            if(evs[rowIdx-1]) delEv(evs[rowIdx-1].id, !!evs[rowIdx-1].isG);
-            inp.value = ""; return;
-        }
+        if(mDel) { var d=parseInt(mDel[1]), cI=parseInt(mDel[2]), rI=parseInt(mDel[3]); var type=cI===1?'m':cI===2?'c':'a'; var evs=localDB.concat(googleEvents).filter(function(e){return e.d===d && e.t===type}); if(evs[rI-1]) delEv(evs[rI-1].id, !!evs[rI-1].isG); inp.value=""; return; }
         var mNote = val.match(/^(\d{1,2})\s*N\s+(.*)/i);
-        if(mNote) { journalData[viewDate.getFullYear()+'-'+viewDate.getMonth()+'-'+parseInt(mNote[1])] = mNote[2]; saveAll(); renderCalendar(); inp.value = ""; return; }
+        if(mNote) { journalData[viewDate.getFullYear()+'-'+viewDate.getMonth()+'-'+parseInt(mNote[1])] = mNote[2]; saveAll(); renderCalendar(); inp.value=""; return; }
         var mEv = val.match(/^(\d{1,2})\s*(R\d*[SLA])?\s*(.*)/i);
-        if(mEv) {
-            var day = parseInt(mEv[1]), pref = mEv[2]||'', txt = mEv[3];
-            localDB.push({ id:'L'+Date.now(), d:day, m:viewDate.getMonth(), y:viewDate.getFullYear(), t:detectType(pref||txt, 'c', 0), n:(pref?pref+' ':'')+txt, dur:1, done:false });
-            saveAll(); renderCalendar(); inp.value = "";
-        }
+        if(mEv) { var day=parseInt(mEv[1]), pr=mEv[2]||'', tx=mEv[3]; localDB.push({id:'L'+Date.now(), d:day, m:viewDate.getMonth(), y:viewDate.getFullYear(), t:detectTypeByRRULE(pr||tx, null), n:(pr?pr+' ':'')+tx, dur:1, done:false}); saveAll(); renderCalendar(); inp.value=""; }
     }
-
-    // Utils
     function toggleZoom() { zoomLevel = (zoomLevel + 1) % 3; applyZoom(); localStorage.setItem('trident_zoom', zoomLevel); renderCalendar(); }
     function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel === 1) document.body.classList.add('compact'); if(zoomLevel === 2) document.body.classList.add('mini'); }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v32', JSON.stringify(localDB)); localStorage.setItem('trident_j_v32', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v33', JSON.stringify(localDB)); localStorage.setItem('trident_j_v33', JSON.stringify(journalData)); }
     function openDesc(id, isG, isJ) { activeDescRef = {id:id, isG:isG, isJ:!!isJ}; var t = isJ?journalData[id]:localDB.concat(googleEvents).find(function(x){return x.id===id}).desc; document.getElementById('descText').value=t||""; document.getElementById('descModal').style.display='flex'; }
     document.getElementById('btnSaveDesc').onclick = async function() { var t = document.getElementById('descText').value; if(activeDescRef.isJ) journalData[activeDescRef.id]=t; else if(activeDescRef.isG){ var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+activeDescRef.id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({description:t})}); syncGoogle(); } else { var e=localDB.find(function(x){return x.id===activeDescRef.id}); if(e) e.desc=t; } saveAll(); closeModal(); renderCalendar(); };
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
