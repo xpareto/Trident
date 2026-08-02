@@ -1,4 +1,4 @@
-var CACHE = 'trident-cache-v29';
+var CACHE = 'trident-cache-v30';
 var FILES = [
   '/index.html',
   '/manifest.json',
