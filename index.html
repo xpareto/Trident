@@ -1,27 +1,26 @@
-<!-- START OF FILE: index.html (Trident v35) -->
+<!-- START OF FILE: index.html (Trident v36) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v35</title>
+    <title>Trident v36</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
             --text: #1e293b; --accent: #2563EB;
-            --weekend-bg: #e0f2fe; /* Albastru pal weekend */
-            --today-yellow: #ffff00; /* Galben azi */
+            --weekend-bg: #e0f2fe; --today-yellow: #ffff00;
             --pink-pending: #fff1f2; --green-done: #dcfce7;
-            --row-h: 48px; --f-size: 11px;
+            --row-h: 50px; --f-size: 11px;
         }
-        body.compact { --row-h: 36px; --f-size: 10px; }
-        body.mini { --row-h: 26px; --f-size: 9px; }
+        body.compact { --row-h: 38px; --f-size: 10px; }
+        body.mini { --row-h: 28px; --f-size: 9px; }
 
-        body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); overflow-x: hidden; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); overflow-x: hidden; width: 100vw; }
         .hdr { background: #1e293b; color: white; padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 45px; }
         .v-badge { background: #2563EB; color: white; padding: 2px 4px; border-radius: 3px; font-size: 9px; font-weight: bold; }
-        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px 8px; font-size: 11px; cursor: pointer; font-weight: bold; }
 
         #overdueZone { background: #fee2e2; border: 2px solid #ef4444; margin: 5px; padding: 8px; border-radius: 8px; display: none; }
         .overdue-title { color: #b91c1c; font-weight: 900; font-size: 10px; text-transform: uppercase; margin-bottom: 5px; }
@@ -38,25 +37,17 @@
         .c-sticky { position: sticky; left: 0; z-index: 100; background: inherit; }
         .c-date { left: 24px; border-right: 2px solid #64748b; }
 
-        /* C1-2: Logica Culori REPARATA */
         .r.weekend { background-color: var(--weekend-bg) !important; }
-        
-        /* Azi: Galben peste tot, inclusiv Sticky Cols */
         .r.today { background-color: var(--today-yellow) !important; outline: 2px solid orange; outline-offset: -2px; }
-        .r.today .c-sticky { background-color: var(--today-yellow) !important; color: var(--text) !important; }
-        .r.today .c:not(.c-sticky) { background-color: var(--today-yellow) !important; }
+        .r.today .c-sticky { background-color: var(--today-yellow) !important; }
 
         .ev-item { display: flex; align-items: center; gap: 3px; padding: 2px; border-radius: 3px; margin-bottom: 1px; border: 1px solid rgba(0,0,0,0.05); font-size: var(--f-size); font-weight: 600; line-height: 1.1; cursor: pointer; }
         .ev-item.pending { background: var(--pink-pending); border-left: 3px solid #f43f5e; }
         .ev-item.done { background: var(--green-done); border-left: 3px solid #22c55e; opacity: 0.6; text-decoration: line-through; }
         
         .ev-txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .final-badge { font-weight: 900; color: #1e293b; margin-right: 3px; }
-
-        .btn-x { color: #f43f5e; font-weight: bold; padding: 0 4px; font-size: 12px; cursor: pointer; }
-        .btn-i { background: white; border: 1px solid #ccc; border-radius: 50%; width: 14px; height: 14px; font-size: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-
         .j-text { font-size: 9px; font-style: italic; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: auto; padding-top: 2px; }
+        
         .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f1f5f9; padding: 6px; display: flex; border-top: 2px solid #2563EB; z-index: 2000; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 15px; }
         .m-box { background: white; padding: 15px; border-radius: 8px; width: 95%; max-width: 400px; color: black; }
@@ -66,10 +57,10 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v35</div>
+    <div class="v-badge" onclick="location.reload()">v36</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
-        <button class="nav-btn" onclick="toggleZoom()">[Z]</button>
+        <button class="nav-btn" onclick="toggleZoom()" title="Resetare vizuală">[Z]</button>
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECO</button>
         <button class="nav-btn sync" style="background:#10b981" onclick="calLogin()">SYNC</button>
         <button class="nav-btn" onclick="navMonth(-1)">&lt;</button>
@@ -94,17 +85,16 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="Ex: 10-15.08 Vacanță">
+    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="Ex: 3-8 Vacanta sau 5.9 Medic">
     <button onclick="runCommand()" style="margin-left:5px; padding:10px; background:#2563EB; color:white; border:none; font-weight:bold; border-radius:5px;">OK</button>
 </div>
 
-<!-- Modal Adaugare -->
 <div id="editModal" class="modal">
     <div class="m-box">
         <h3 id="modalTitle">Nou</h3>
-        <input type="text" id="evName" placeholder="Nume" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
-        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
-        <div style="display:flex; gap:10px;">
+        <input type="text" id="evName" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
+        <input type="number" id="evDur" value="1" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;">
+        <div style="display:flex; gap:10px; margin-top:15px;">
             <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="closeModal()">ANULARE</button>
             <button class="nav-btn" style="flex:1; background:var(--accent);" id="btnSave">SALVEAZĂ</button>
         </div>
@@ -118,8 +108,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v35') || localStorage.getItem('trident_db_v34') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v35') || localStorage.getItem('trident_j_v34') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v36') || localStorage.getItem('trident_db_v35') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v36') || localStorage.getItem('trident_j_v35') || '{}');
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
@@ -128,10 +118,10 @@
         } catch(e) { console.error(e); }
     }
 
-    function getCategory(text, rrule) {
+    function getCategory(text) {
         var s = (text || "").toUpperCase().trim();
-        if (/^R\d*L/.test(s) || (rrule && rrule.indexOf('MONTHLY') > -1)) return 'm';
-        if (/^RA/.test(s) || /^R\d*A/.test(s) || /SF\.|SFÂNT|SFANT|ZI |ZIUA |ZILE |NUNTA|CUNUNIE|BOTEZ|ORTODOX|CATOLIC/.test(s) || (rrule && rrule.indexOf('YEARLY') > -1)) return 'a';
+        if (/^R\d*L/.test(s)) return 'm';
+        if (/^RA/.test(s) || /^R\d*A/.test(s) || /SF\.|SFÂNT|SFANT|ZI |ZIUA |ZILE |NUNTA|CUNUNIE|BOTEZ|ORTODOX|CATOLIC/.test(s)) return 'a';
         return 'c';
     }
 
@@ -147,7 +137,7 @@
                     var sDt = new Date(ge.start.dateTime || ge.start.date), eDt = new Date(ge.end.dateTime || ge.end.date);
                     var dur = Math.round((eDt - sDt) / 86400000) || 1;
                     var title = ge.summary || "", isDone = title.indexOf("[OK]") > -1;
-                    return { id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: title.replace("[OK]", "").trim(), t: getCategory(title, ge.recurrence ? ge.recurrence[0] : null), dur: dur, isG: true, done: isDone, link: ge.htmlLink };
+                    return { id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: title.replace("[OK]", "").trim(), t: getCategory(title), dur: dur, isG: true, done: isDone, link: ge.htmlLink };
                 });
                 renderCalendar();
             }
@@ -199,25 +189,37 @@
             var end = new Date(ev.y, ev.m, ev.d + (ev.dur||1) - 1);
             return !ev.done && end < new Date(Y, M, 1);
         });
-        if(pastEvs.length > 0 && M === now.getMonth()) {
-            zone.style.display = 'block';
-            cont.innerHTML = pastEvs.map(function(e) { 
-                return '<div class="ev-item pending"><input type="checkbox" class="chk" onclick="tglStatus(\''+e.id+'\', '+!!e.isG+')"><span>['+e.d+'.'+(e.m+1)+'] '+e.n+'</span></div>';
-            }).join('');
-        } else zone.style.display = 'none';
+        if(pastEvs.length > 0 && M === now.getMonth()) { zone.style.display = 'block'; cont.innerHTML = pastEvs.map(function(e) { return '<div class="ev-item pending"><input type="checkbox" class="chk" onclick="tglStatus(\''+e.id+'\', '+!!e.isG+')"><span>['+e.d+'.'+(e.m+1)+'] '+e.n+'</span></div>'; }).join(''); } else zone.style.display = 'none';
     }
 
+    // B1: Motor comanda reparat (suporta d.m-d.m sau d-d.m)
     function runCommand() {
         var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
         var curM = viewDate.getMonth(), curY = viewDate.getFullYear();
-        var mRangeFull = val.match(/^(\d+)\.(\d+)-(\d+)\.(\d+)\s+(.*)/);
-        if(mRangeFull) { addRange(parseInt(mRangeFull[1]), parseInt(mRangeFull[2])-1, parseInt(mRangeFull[3]), parseInt(mRangeFull[4])-1, mRangeFull[5]); return resetCmd(inp); }
-        var mRangeEndM = val.match(/^(\d+)-(\d+)\.(\d+)\s+(.*)/);
-        if(mRangeEndM) { addRange(parseInt(mRangeEndM[1]), curM, parseInt(mRangeEndM[2]), parseInt(mRangeEndM[3])-1, mRangeEndM[4]); return resetCmd(inp); }
-        var mPunctual = val.match(/^(\d+)\.(\d+)\s+(.*)/);
-        if(mPunctual) { localDB.push({ id:'L'+Date.now(), d:parseInt(mPunctual[1]), m:parseInt(mPunctual[2])-1, y:curY, t:getCategory(mPunctual[3]), n:mPunctual[3], dur:1, done:false }); return resetCmd(inp); }
-        var mStd = val.match(/^(\d+)\s+(.*)/);
-        if(mStd) { localDB.push({ id:'L'+Date.now(), d:parseInt(mStd[1]), m:curM, y:curY, t:getCategory(mStd[2]), n:mStd[2], dur:1, done:false }); return resetCmd(inp); }
+        
+        // 1. d1.m1-d2.m2 text
+        var m1 = val.match(/^(\d{1,2})\.(\d{1,2})-(\d{1,2})\.(\d{1,2})\s+(.*)/);
+        if(m1) { addRange(parseInt(m1[1]), parseInt(m1[2])-1, parseInt(m1[3]), parseInt(m1[4])-1, m1[5]); return resetCmd(inp); }
+        
+        // 2. d1-d2.m2 text
+        var m2 = val.match(/^(\d{1,2})-(\d{1,2})\.(\d{1,2})\s+(.*)/);
+        if(m2) { addRange(parseInt(m2[1]), curM, parseInt(m2[2]), parseInt(m2[3])-1, m2[4]); return resetCmd(inp); }
+        
+        // 3. d1-d2 text (luna curenta)
+        var m3 = val.match(/^(\d{1,2})-(\d{1,2})\s+(.*)/);
+        if(m3) { addRange(parseInt(m3[1]), curM, parseInt(m3[2]), curM, m3[3]); return resetCmd(inp); }
+
+        // 4. d.m text
+        var m4 = val.match(/^(\d{1,2})\.(\d{1,2})\s+(.*)/);
+        if(m4) { localDB.push({ id:'L'+Date.now(), d:parseInt(m4[1]), m:parseInt(m4[2])-1, y:curY, t:getCategory(m4[3]), n:m4[3], dur:1, done:false }); return resetCmd(inp); }
+
+        // 5. d text
+        var m5 = val.match(/^(\d{1,2})\s+(.*)/);
+        if(m5) { localDB.push({ id:'L'+Date.now(), d:parseInt(m5[1]), m:curM, y:curY, t:getCategory(m5[2]), n:m5[2], dur:1, done:false }); return resetCmd(inp); }
+        
+        // 6. Notă: d N text
+        var mN = val.match(/^(\d{1,2})\s+N\s+(.*)/i);
+        if(mN) { journalData[curY+'-'+curM+'-'+parseInt(mN[1])] = mN[2]; return resetCmd(inp); }
     }
 
     function addRange(d1, m1, d2, m2, txt) {
@@ -227,11 +229,35 @@
     }
 
     function resetCmd(i) { saveAll(); renderCalendar(); i.value = ""; }
-    function toggleZoom() { zoomLevel = (zoomLevel + 1) % 3; applyZoom(); localStorage.setItem('trident_zoom', zoomLevel); renderCalendar(); }
-    function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel === 1) document.body.classList.add('compact'); if(zoomLevel === 2) document.body.classList.add('mini'); }
-    function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v35', JSON.stringify(localDB)); localStorage.setItem('trident_j_v35', JSON.stringify(journalData)); }
+    
+    // Z1: Zoom cu resetare latime
+    function toggleZoom() { 
+        zoomLevel = (zoomLevel + 1) % 3; 
+        applyZoom(); 
+        localStorage.setItem('trident_zoom', zoomLevel); 
+        window.scrollTo(0,0); // Forțăm browserul să realinieze layout-ul
+        renderCalendar(); 
+    }
+    function applyZoom() { 
+        document.body.classList.remove('compact', 'mini'); 
+        if(zoomLevel === 1) document.body.classList.add('compact'); 
+        if(zoomLevel === 2) document.body.classList.add('mini'); 
+        // Resetare Viewport virtual
+        var viewport = document.querySelector('meta[name="viewport"]');
+        viewport.setAttribute('content', 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no');
+    }
+
+    function navMonth(dir) { 
+        viewDate.setMonth(viewDate.getMonth() + dir); 
+        googleEvents = []; // Curățăm cache-ul lunii precedente
+        renderCalendar(); 
+        syncGoogle(); 
+    }
+
+    function saveAll() { localStorage.setItem('trident_db_v36', JSON.stringify(localDB)); localStorage.setItem('trident_j_v36', JSON.stringify(journalData)); }
+    function saveJ(k, v) { journalData[k] = v; saveAll(); }
     function toggleEco() { ecoMode = !ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
+    function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
     function calLogin() { window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?client_id=" + GCAL_CLIENT_ID + "&redirect_uri=" + encodeURIComponent(GCAL_REDIRECT) + "&response_type=token&scope=" + encodeURIComponent("https://www.googleapis.com/auth/calendar.events") + "&prompt=select_account"; }
     function handleGoogleCallback() { var p = new URLSearchParams(window.location.hash.substring(1)); var t = p.get('access_token'); if(t) { localStorage.setItem('gcal_token', t); window.location.hash = ""; syncGoogle(); } }
     async function tglStatus(id, isG) { if(isG) { var ev=googleEvents.find(function(x){return x.id===id}); if(!ev) return; ev.done=!ev.done; var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}); syncGoogle(); } else { localDB.forEach(function(x){if(x.id===id)x.done=!x.done}); saveAll(); renderCalendar(); } }
