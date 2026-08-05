@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v43) -->
+<!-- START OF FILE: index.html (Trident v44) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v43</title>
+    <title>Trident v44</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -22,11 +22,11 @@
         .v-badge { background: #2563EB; color: white; padding: 2px 4px; border-radius: 3px; font-size: 9px; font-weight: bold; }
         .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px 8px; font-size: 11px; cursor: pointer; font-weight: bold; }
 
-        .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 80px; }
+        .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 80px; background: #eee; }
         .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 10px; position: sticky; top: 45px; z-index: 1500; border-bottom: 2px solid #94a3b8; height: 38px; }
         .h-r .c { display: flex !important; justify-content: flex-end !important; align-items: center !important; padding-bottom: 3px !important; flex-direction: column; }
 
-        .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: var(--row-h); }
+        .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: var(--row-h); background: white; }
         .c { border-right: 1px solid var(--border); padding: 1px 2px; flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; min-width: 0; }
         
         .c-fix-nr { flex: 0 0 24px; justify-content: center; text-align: center; font-weight: bold; font-size: 11px; }
@@ -60,8 +60,8 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v43</div>
-    <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
+    <div class="v-badge" onclick="location.reload()">v44</div>
+    <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">LUNA</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z]</button>
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECO</button>
@@ -70,6 +70,11 @@
         <button class="nav-btn" onclick="navMonth(1)">&gt;</button>
     </div>
 </header>
+
+<div id="overdueZone" style="display:none; background:#fee2e2; border:2px solid #ef4444; margin:5px; padding:8px; border-radius:8px;">
+    <div style="color:#b91c1c; font-weight:900; font-size:10px; text-transform:uppercase;">Restanțe</div>
+    <div id="overdueContent"></div>
+</div>
 
 <div class="grid" id="mainGrid">
     <div class="h-r">
@@ -83,7 +88,7 @@
 </div>
 
 <div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="15RLPizza | 12D21 | 20NNota">
+    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="Ex: 15RLPizza | 12D21">
     <button onclick="runCommand()" style="margin-left:5px; padding:10px; background:#2563EB; color:white; border:none; font-weight:bold; border-radius:5px;">OK</button>
 </div>
 
@@ -92,71 +97,49 @@
 <div id="editModal" class="modal"><div class="m-box"><h3 id="modalTitle">Nou</h3><input type="text" id="evName" placeholder="Nume" style="width:100%;padding:10px;border:1px solid #ccc;"><input type="number" id="evDur" value="1" style="width:100%;padding:10px;margin-top:10px;border:1px solid #ccc;"><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ANULARE</button><button class="nav-btn" style="flex:1;background:var(--accent);" id="btnSave">SALVEAZĂ</button></div></div></div>
 
 <script>
+    // --- DATE GLOBALE ---
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
-    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
+    var monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
+    var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"];
+
+    var viewDate = new Date();
+    var localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
 
     function initApp() {
+        // 1. AFISARE IMEDIATA LUNA (Impiedica "...")
+        var Y = viewDate.getFullYear(), M = viewDate.getMonth();
+        document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
+
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v43') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v43') || '{}');
+            // 2. CITIRE SIGURA LocalStorage
+            var savedDB = localStorage.getItem('trident_db_v44');
+            if(savedDB) localDB = JSON.parse(savedDB);
+            var savedJ = localStorage.getItem('trident_j_v44');
+            if(savedJ) journalData = JSON.parse(savedJ);
+            
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
-            renderCalendar(); // Desenează grila imediat
-            if(window.location.hash.indexOf('access_token') > -1) handleGoogleCallback();
-            else if(localStorage.getItem('gcal_token')) syncGoogle();
-        } catch(e) { console.error("Init Error", e); }
-    }
 
-    function parseRec(recurrenceArray) {
-        if (!recurrenceArray) return null;
-        var line = "";
-        for(var i=0; i<recurrenceArray.length; i++) {
-            if(recurrenceArray[i].indexOf('RRULE:') === 0) { line = recurrenceArray[i]; break; }
-        }
-        if (!line) return null;
-        var parts = line.replace('RRULE:', '').split(';');
-        var map = {};
-        for(var j=0; j<parts.length; j++) { var kv = parts[j].split('='); map[kv[0]] = kv[1]; }
-        return { freq: map['FREQ'], interval: parseInt(map['INTERVAL'] || '1') };
-    }
+            // 3. DESENARE GRILA (Inainte de orice Sync)
+            renderCalendar();
 
-    async function syncGoogle() {
-        var token = localStorage.getItem('gcal_token'); if (!token) return;
-        var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
-        var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
-        try {
-            var r1 = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
-            var d1 = await r1.json();
-            var r2 = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=false", { headers: { Authorization: "Bearer " + token } });
-            var d2 = await r2.json();
-            var masterMap = {};
-            if(d2.items) { for(var i=0; i<d2.items.length; i++) { var m = d2.items[i]; masterMap[m.id] = parseRec(m.recurrence); } }
-
-            if (d1.items) {
-                googleEvents = [];
-                for(var j=0; j<d1.items.length; j++) {
-                    var ge = d1.items[j];
-                    var sDt = new Date(ge.start.dateTime || ge.start.date), eDt = new Date(ge.end.dateTime || ge.end.date);
-                    var dur = Math.round((eDt - sDt) / 86400000) || 1;
-                    var title = ge.summary || "", isDone = title.indexOf("[OK]") > -1;
-                    var cleanT = title.replace("[OK]", "").trim();
-                    var rrule = masterMap[ge.recurringEventId] || parseRec(ge.recurrence);
-                    var type = 'c';
-                    if (rrule) { if (rrule.freq === 'MONTHLY') type = 'm'; else if (rrule.freq === 'YEARLY') type = 'a'; }
-                    if (/CUNUNIE|NUNTA|SF\.|SFANT|SFÂNT|ZI |ZIUA |ZILE |CATOLIC|ORTODOX/.test(cleanT.toUpperCase())) type = 'a';
-                    googleEvents.push({ id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: cleanT, t: type, dur: dur, isG: true, done: isDone, link: ge.htmlLink, desc: ge.description || "" });
-                }
-                renderCalendar();
+            // 4. LOGICA GOOGLE (Fara sa blocheze)
+            if(window.location.hash.indexOf('access_token') > -1) {
+                handleGoogleCallback();
+            } else if(localStorage.getItem('gcal_token')) {
+                syncGoogle();
             }
-        } catch (e) { console.error("Sync Error", e); }
+        } catch(e) {
+            console.error("Crash prevenit la start", e);
+            renderCalendar(); // Incarca macar liniile goale
+        }
     }
 
     function renderCalendar() {
         var body = document.getElementById('gridBody'); if(!body) return;
         var Y = viewDate.getFullYear(), M = viewDate.getMonth(), now = new Date(); now.setHours(0,0,0,0);
-        var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"], monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
         var lastDay = new Date(Y, M + 1, 0).getDate();
         
@@ -200,49 +183,11 @@
         if(M === now.getMonth()) setTimeout(function(){ document.getElementById('scroll-today')?.scrollIntoView({block:"center"}); }, 500);
     }
 
-    async function runCommand() {
-        var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
-        var curM = viewDate.getMonth(), curY = viewDate.getFullYear();
-        var mDel = val.match(/^(\d{1,2})D([1-3])(\d+)/i);
-        if(mDel) {
-            var d = parseInt(mDel[1]), cI = parseInt(mDel[2]), rI = parseInt(mDel[3]);
-            var type = cI === 1 ? 'm' : cI === 2 ? 'c' : 'a';
-            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type; });
-            if(evs[rI-1]) delEv(evs[rI-1].id, !!evs[rI-1].isG);
-            inp.value = ""; return;
-        }
-        var mNote = val.match(/^(\d{1,2})N(.*)/i);
-        if(mNote) { journalData[curY+'-'+curM+'-'+parseInt(mNote[1])] = mNote[2].trim(); saveAll(); renderCalendar(); inp.value = ""; return; }
-        var mEvRec = val.match(/^(\d{1,2})(RL|RA)(.*)/i);
-        if(mEvRec) {
-            var d = parseInt(mEvRec[1]), freq = mEvRec[2].toUpperCase(), txt = mEvRec[3].trim();
-            await postToGoogle({ n: txt, d: d, m: curM, y: curY, t: (freq==='RL'?'m':'a'), rec: freq });
-            syncGoogle(); inp.value = ""; return;
-        }
-        var mEv = val.match(/^(\d{1,2})(.*)/i);
-        if(mEv) { var day = parseInt(mEv[1]), tx = mEv[2].trim(); localDB.push({ id:'L'+Date.now(), d:day, m:curM, y:curY, t:'c', n:tx, dur:1, done:false }); saveAll(); renderCalendar(); inp.value = ""; }
-    }
-
-    async function postToGoogle(ev) {
-        var tk = localStorage.getItem('gcal_token'); if(!tk) return;
-        var dateStr = ev.y + "-" + String(ev.m+1).padStart(2,'0') + "-" + String(ev.d).padStart(2,'0');
-        var body = { summary: ev.n, start: { date: dateStr }, end: { date: dateStr } };
-        if (ev.rec === 'RL') body.recurrence = ["RRULE:FREQ=MONTHLY"];
-        if (ev.rec === 'RA') body.recurrence = ["RRULE:FREQ=YEARLY"];
-        await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'}, body:JSON.stringify(body) });
-    }
-
-    function toggleZoom() { zoomLevel=(zoomLevel+1)%3; applyZoom(); localStorage.setItem('trident_zoom', zoomLevel); renderCalendar(); }
-    function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel === 1) document.body.classList.add('compact'); if(zoomLevel === 2) document.body.classList.add('mini'); }
-    function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v43', JSON.stringify(localDB)); localStorage.setItem('trident_j_v43', JSON.stringify(journalData)); }
-    function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
-    function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
-    function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
-    function handleGoogleCallback() { var p=new URLSearchParams(window.location.hash.substring(1)); var t=p.get('access_token'); if(t){localStorage.setItem('gcal_token',t); window.location.hash=""; syncGoogle();} }
-    async function tglStatus(id, isG) { var all=localDB.concat(googleEvents); var ev=null; for(var i=0;i<all.length;i++) if(all[i].id===id) ev=all[i]; if(!ev)return; if(isG){ ev.done=!ev.done; var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}); syncGoogle(); } else { ev.done=!ev.done; saveAll(); renderCalendar(); } }
-    async function delEv(id, isG) { var all=localDB.concat(googleEvents); var ev=null; for(var i=0;i<all.length;i++) if(all[i].id===id) ev=all[i]; if(!ev||!confirm("Ștergi: "+ev.n+"?"))return; if(isG){ var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'DELETE',headers:{Authorization:"Bearer "+tk}}); syncGoogle(); } else { localDB=localDB.filter(function(x){return x.id!==id}); saveAll(); renderCalendar(); } }
-    function openDesc(id, isG, isJ) { activeDescRef={id:id,isG:isG,isJ:!!isJ}; var t=""; if(isJ) t=journalData[id]; else { var all=localDB.concat(googleEvents); for(var i=0;i<all.length;i++) if(all[i].id===id) t=all[i].desc; } document.getElementById('descText').value=t||""; document.getElementById('descModal').style.display='flex'; }
-    document.getElementById('btnSaveDesc').onclick = async function() { var t=document.getElementById('descText').value; if(activeDescRef.isJ) journalData[activeDescRef.id] = t; else if(activeDescRef.isG) { var tk = localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/" + activeDescRef.id, { method: 'PATCH', headers: { Authorization: "Bearer " + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ description: t }) }); syncGoogle(); } else { for(var i=0;i<localDB.length;i++) if(localDB[i].id === activeDescRef.id) localDB[i].desc = t; } saveAll(); closeModal(); renderCalendar(); };
-    function openAdd(d, t) { editRef={d:d,t:t}; document.getElementById('modalTitle').innerText="Ziua "+d; document.getElementById('evName').value=""; document.getElementById('evDur').value=1; document.getElementById('editModal').style.display='flex'; }
-    document.getElementById('btnSave').onclick = function() { var n=document.getElementById('evName').value.trim(); var dur=parseInt(document.getElementById('evDur').value)||1; if(n) 
+    // --- GOOGLE SYNC (RFC 5545) ---
+    async function syncGoogle() {
+        var token = localStorage.getItem('gcal_token'); if (!token) return;
+        var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
+        var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        try {
+            var r1 = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
+            var d1 = await r
