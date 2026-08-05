@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v48) -->
+<!-- START OF FILE: index.html (Trident v52) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v48</title>
+    <title>Trident v52</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -17,11 +17,15 @@
         body.compact { --row-h: 36px; --f-ev: 10px; }
         body.mini { --row-h: 26px; --f-ev: 9px; }
         body { font-family: sans-serif; margin: 0; padding: 0; background: white; color: var(--text); overflow-x: hidden; width: 100vw; }
-        .hdr { background: #1e293b; color: white; padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 45px; }
-        .v-badge { background: #ef4444; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
-        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px 8px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        
+        /* Antet redesenat conform cerintei */
+        .hdr { background: #1e293b; color: white; padding: 5px 8px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 50px; }
+        .v-label { font-size: 16px; font-weight: 900; color: #60a5fa; margin-right: 5px; }
+        .nav-group { display: flex; align-items: center; gap: 3px; }
+        .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px 7px; font-size: 13px; cursor: pointer; font-weight: bold; }
+        
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 80px; }
-        .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 10px; position: sticky; top: 45px; z-index: 1500; border-bottom: 2px solid #94a3b8; height: 38px; }
+        .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 10px; position: sticky; top: 50px; z-index: 1500; border-bottom: 2px solid #94a3b8; height: 38px; }
         .h-r .c { display: flex !important; justify-content: flex-end !important; align-items: center !important; padding-bottom: 3px !important; flex-direction: column; }
         .r { display: flex; width: 100%; border-bottom: 1px solid var(--border); min-height: var(--row-h); background: white; }
         .c { border-right: 1px solid var(--border); padding: 1px 2px; flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; min-width: 0; }
@@ -35,7 +39,6 @@
         .ev-item { display: flex; align-items: center; gap: 3px; padding: 2px; border-radius: 3px; margin-bottom: 1px; border: 1px solid rgba(0,0,0,0.05); font-size: var(--f-ev); font-weight: 600; line-height: 1.1; cursor: pointer; }
         .ev-item.pending { background: var(--pink-pending); border-left: 3px solid #f43f5e; }
         .ev-item.done { background: var(--green-done); border-left: 3px solid #22c55e; opacity: 0.6; text-decoration: line-through; }
-        .ev-txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-x { color: #f43f5e; font-weight: bold; padding: 0 4px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
         .btn-i { background: white; border: 1px solid #ccc; border-radius: 50%; width: 14px; height: 14px; font-size: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .btn-i.has-info { background: #fbbf24; border-color: #d97706; }
@@ -47,14 +50,9 @@
         textarea { width: 100%; height: 120px; font-family: inherit; margin-top: 10px; border: 1px solid #ccc; border-radius: 5px; padding: 8px; }
     </style>
 
-    <!-- SCRIPT PRINCIPAL v48 (MUTAT IN HEAD PENTRU DEFINIRE IMEDIATA) -->
     <script>
-        var traceLogs = ["[" + new Date().toLocaleTimeString() + "] Trace pornit v48"];
-        function T(msg) {
-            var time = new Date().toLocaleTimeString();
-            traceLogs.push("[" + time + "] " + msg);
-            console.log(msg);
-        }
+        var traceLogs = ["[" + new Date().toLocaleTimeString() + "] v52 start"];
+        function T(msg) { traceLogs.push("[" + new Date().toLocaleTimeString() + "] " + msg); console.log(msg); }
         
         var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
         var GCAL_REDIRECT = window.location.origin + window.location.pathname;
@@ -65,209 +63,53 @@
         var localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
 
         function initApp() {
-            T("initApp() apelat");
             try {
                 var Y = viewDate.getFullYear(), M = viewDate.getMonth();
                 var lbl = document.getElementById('mLabel');
                 if(lbl) lbl.innerHTML = monthNames[M] + " " + Y;
 
-                // Citire date cu protectie crash
-                try {
-                    var sDB = localStorage.getItem('trident_db_v48') || localStorage.getItem('trident_db_v46');
-                    if(sDB) localDB = JSON.parse(sDB);
-                    var sJ = localStorage.getItem('trident_j_v48') || localStorage.getItem('trident_j_v46');
-                    if(sJ) journalData = JSON.parse(sJ);
-                } catch(e) { T("Eroare citire memorie: " + e.message); }
-
+                localDB = JSON.parse(localStorage.getItem('trident_db_v52') || localStorage.getItem('trident_db_v46') || '[]');
+                journalData = JSON.parse(localStorage.getItem('trident_j_v52') || localStorage.getItem('trident_j_v46') || '{}');
                 ecoMode = localStorage.getItem('trident_eco') === 'true';
                 zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
                 
-                T("Configurari gata. Randare...");
+                applyZoom();
                 renderCalendar();
 
-                if(window.location.hash.indexOf('access_token') > -1) {
-                    T("Token detectat");
-                    handleGoogleCallback();
-                } else if(localStorage.getItem('gcal_token')) {
-                    syncGoogle();
-                }
-            } catch(err) { T("CRASH in initApp: " + err.message); }
+                if(window.location.hash.indexOf('access_token') > -1) handleGoogleCallback();
+                else if(localStorage.getItem('gcal_token')) syncGoogle();
+            } catch(err) { T("Error: " + err.message); renderCalendar(); }
         }
 
-        function renderCalendar() {
-            T("Randare inceputa");
-            var body = document.getElementById('gridBody');
-            if(!body) return;
-            var Y = viewDate.getFullYear(), M = viewDate.getMonth(), now = new Date(); now.setHours(0,0,0,0);
-            var lastDay = new Date(Y, M + 1, 0).getDate();
-            var html = "";
-
-            for (var d = 1; d <= lastDay; d++) {
-                var curDt = new Date(Y, M, d);
-                var isToday = (curDt.toDateString() === now.toDateString());
-                var isWE = (curDt.getDay() === 0 || curDt.getDay() === 6);
-                var key = Y + "-" + M + "-" + d;
-                
-                var all = localDB.concat(googleEvents);
-                var dayEvs = [];
-                for(var i=0; i<all.length; i++) {
-                    var ev = all[i];
-                    var s = new Date(ev.y, ev.m, ev.d), end = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
-                    if((d === ev.d || d === (ev.d + ev.dur - 1)) && curDt >= s && curDt <= end) dayEvs.push(ev);
-                }
-
-                if (ecoMode && curDt < now && !isToday) {
-                    var hasPend = false;
-                    for(var p=0; p<dayEvs.length; p++) if(!dayEvs[p].done) hasPend = true;
-                    if(!hasPend && !journalData[key]) continue;
-                }
-
-                var rCls = "r" + (isToday ? " today" : "") + (isWE ? " weekend" : "");
-                html += '<div class="'+rCls+'" '+(isToday?'id="scroll-today"':'')+'>';
-                html += '<div class="c c-fix-nr c-sticky">'+d+'</div><div class="c c-fix-zi c-sticky c-date">'+dayNames[curDt.getDay()]+'</div>';
-                
-                var types = ['m','c','a'];
-                for(var t=0; t<3; t++) {
-                    var type = types[t];
-                    html += '<div class="c" onclick="openAdd('+d+',\''+type+'\')">';
-                    for(var j=0; j<dayEvs.length; j++) {
-                        var e = dayEvs[j];
-                        if(e.t === type) {
-                            var status = e.done ? "done" : "pending";
-                            var txt = e.n; if(e.dur > 1) txt = (d === e.d) ? "(1:"+e.dur+") "+e.n : "<b>FINAL</b> "+e.n;
-                            html += '<div class="ev-item '+status+'" onclick="event.stopPropagation(); openAdd('+d+',\''+type+'\')">';
-                            html += '<input type="checkbox" class="chk" '+(e.done?'checked':'')+' onclick="event.stopPropagation(); tglStatus(\''+e.id+'\', '+!!e.isG+')">';
-                            html += '<span class="ev-txt">'+(e.isG?"☁️ ":"• ")+txt+'</span>';
-                            html += '<div class="btn-i '+(e.desc?'has-info':'')+'" onclick="event.stopPropagation(); openDesc(\''+e.id+'\','+!!e.isG+')">i</div>';
-                            html += '<div class="btn-x" onclick="event.stopPropagation(); delEv(\''+e.id+'\','+!!e.isG+')">×</div></div>';
-                        }
-                    }
-                    if(type === 'c' && journalData[key]) {
-                        html += '<div class="j-row"><div class="j-text">'+journalData[key]+'</div><div class="btn-i has-info" onclick="event.stopPropagation(); openDesc(\''+key+'\', false, true)">i</div></div>';
-                    }
-                    html += '</div>';
-                }
-                html += '</div>';
+        function getCategory(text, rrule) {
+            var s = (text || "").toUpperCase().trim();
+            // ANUALE: RA, ZI, ZIUA, ZILE, Sfinte, Evenimente viata
+            if (/^(RA|R\d*A|ZI |ZIUA |ZILE )/.test(s)) return 'a';
+            if (/CUNUNIE|NUNTA|SF\.|SFANT|SFÂNT|CATOLIC|ORTODOX|ADORMIREA|ANIVERSARE|BOTEZ/.test(s)) return 'a';
+            // LUNARE: RL
+            if (/^(RL|R\d*L)/.test(s)) return 'm';
+            // CURENTE: RS
+            if (/^(RS|R\d*S)/.test(s)) return 'c';
+            // GOOGLE RRULE
+            if (rrule) {
+                if (rrule.indexOf('MONTHLY') > -1) return 'm';
+                if (rrule.indexOf('YEARLY') > -1) return 'a';
             }
-            body.innerHTML = html;
-            if(M === now.getMonth()) setTimeout(function(){ var el = document.getElementById('scroll-today'); if(el) el.scrollIntoView({block:"center"}); }, 300);
-        }
-
-        // Parsare manuala fara URLSearchParams
-        function handleGoogleCallback() {
-            var hash = window.location.hash.substring(1);
-            var parts = hash.split('&');
-            var token = "";
-            for(var i=0; i<parts.length; i++) {
-                if(parts[i].indexOf('access_token=') === 0) token = parts[i].split('=')[1];
-            }
-            if(token) {
-                localStorage.setItem('gcal_token', token);
-                window.location.hash = "";
-                syncGoogle();
-            }
+            return 'c';
         }
 
         function syncGoogle() {
-            T("Sync inceput");
             var token = localStorage.getItem('gcal_token'); if(!token) return;
             var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
             var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
-            
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime");
-            xhr.setRequestHeader("Authorization", "Bearer " + token);
-            xhr.onload = function() {
-                if(xhr.status === 200) {
-                    var data = JSON.parse(xhr.responseText);
-                    if(data.items) {
-                        googleEvents = [];
-                        for(var i=0; i<data.items.length; i++) {
-                            var ge = data.items[i];
-                            var s = new Date(ge.start.dateTime || ge.start.date), e = new Date(ge.end.dateTime || ge.end.date);
-                            var dur = Math.round((e-s)/86400000) || 1;
-                            var title = ge.summary || "", done = title.indexOf("[OK]") > -1;
-                            var type = (ge.recurrence || ge.recurringEventId) ? 'm' : 'c';
-                            if(/CUNUNIE|NUNTA|SF\.|SFANT|SFÂNT|ZI |ZIUA |ZILE |CATOLIC|ORTODOX|ADORMIREA/.test(title.toUpperCase())) type = 'a';
-                            googleEvents.push({ id:ge.id, d:s.getDate(), m:s.getMonth(), y:s.getFullYear(), n:title.replace("[OK]","").trim(), t:type, dur:dur, isG:true, done:done, desc:ge.description||"", link:ge.htmlLink });
-                        }
-                        renderCalendar();
-                    }
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open("GET", "https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=false");
+            xhr2.setRequestHeader("Authorization", "Bearer " + token);
+            xhr2.onload = function() {
+                var masterMap = {};
+                if(xhr2.status === 200) {
+                    var d2 = JSON.parse(xhr2.responseText);
+                    if(d2.items) for(var i=0; i<d2.items.length; i++) if(d2.items[i].recurrence) masterMap[d2.items[i].id] = d2.items[i].recurrence[0];
                 }
-            };
-            xhr.send();
-        }
-
-        function runCommand() {
-            var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
-            var mDel = val.match(/^(\d{1,2})D([1-3])(\d+)/i);
-            if(mDel) {
-                var d = parseInt(mDel[1]), cI = parseInt(mDel[2]), rI = parseInt(mDel[3]);
-                var type = cI === 1 ? 'm' : cI === 2 ? 'c' : 'a';
-                var dayEvs = localDB.concat(googleEvents);
-                var match = null, count = 0;
-                for(var i=0; i<dayEvs.length; i++) { if(dayEvs[i].d === d && dayEvs[i].t === type) { count++; if(count === rI) match = dayEvs[i]; } }
-                if(match) delEv(match.id, !!match.isG);
-                inp.value = ""; return;
-            }
-            var mNote = val.match(/^(\d{1,2})N(.*)/i);
-            if(mNote) { journalData[viewDate.getFullYear()+'-'+viewDate.getMonth()+'-'+parseInt(mNote[1])] = mNote[2].trim(); saveAll(); renderCalendar(); inp.value = ""; return; }
-            var mEv = val.match(/^(\d{1,2})(RL|RA)?(.*)/i);
-            if(mEv) {
-                var day = parseInt(mEv[1]), freq = mEv[2]||'', tx = mEv[3].trim();
-                localDB.push({ id:'L'+Date.now(), d:day, m:viewDate.getMonth(), y:viewDate.getFullYear(), t:(freq==='RL'?'m':freq==='RA'?'a':'c'), n:tx, dur:1, done:false });
-                saveAll(); renderCalendar(); inp.value = "";
-            }
-        }
-
-        // Functii de sistem
-        function saveAll() { localStorage.setItem('trident_db_v48', JSON.stringify(localDB)); localStorage.setItem('trident_j_v48', JSON.stringify(journalData)); }
-        function openTrace() { document.getElementById('traceArea').value = traceLogs.join("\n"); document.getElementById('traceModal').style.display = 'flex'; }
-        function copyTrace() { var a=document.getElementById("traceArea"); a.select(); document.execCommand("copy"); alert("Log-uri copiate!"); }
-        function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-        function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
-        function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
-        function toggleZoom() { zoomLevel=(zoomLevel+1)%3; applyZoom(); localStorage.setItem('trident_zoom', zoomLevel); renderCalendar(); }
-        function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel===1) document.body.classList.add('compact'); if(zoomLevel===2) document.body.classList.add('mini'); }
-        function openAdd(d, t) { editRef={d:d,t:t}; document.getElementById('modalTitle').innerText="Ziua "+d; document.getElementById('evName').value=""; document.getElementById('evDur').value=1; document.getElementById('editModal').style.display='flex'; }
-        function openDesc(id, isG, isJ) { activeDescRef={id:id,isG:isG,isJ:!!isJ}; var t=""; if(isJ) t=journalData[id]; else { var all=localDB.concat(googleEvents); for(var i=0;i<all.length;i++) if(all[i].id===id) t=all[i].desc; } document.getElementById('descText').value=t||""; document.getElementById('descModal').style.display='flex'; }
-        function delEv(id, isG) { if(!confirm("Stergi?")) return; if(isG){ var tk=localStorage.getItem('gcal_token'); var xhr=new XMLHttpRequest(); xhr.open("DELETE","https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id); xhr.setRequestHeader("Authorization","Bearer "+tk); xhr.onload=function(){syncGoogle();}; xhr.send(); } else { var n=[]; for(var i=0;i<localDB.length;i++) if(localDB[i].id!==id) n.push(localDB[i]); localDB=n; saveAll(); renderCalendar(); } }
-        function tglStatus(id, isG) { var all=localDB.concat(googleEvents); var ev=null; for(var i=0;i<all.length;i++) if(all[i].id===id) ev=all[i]; if(!ev)return; if(isG){ ev.done=!ev.done; var tk=localStorage.getItem('gcal_token'); var xhr=new XMLHttpRequest(); xhr.open("PATCH","https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id); xhr.setRequestHeader("Authorization","Bearer "+tk); xhr.setRequestHeader("Content-Type","application/json"); xhr.onload=function(){syncGoogle();}; xhr.send(JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})); } else { ev.done=!ev.done; saveAll(); renderCalendar(); } }
-        function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
-    </script>
-</head>
-
-<body onload="initApp()">
-
-<header class="hdr">
-    <div class="v-badge" onclick="openTrace()">[TRACE]</div>
-    <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">LUNA</div>
-    <div style="display:flex; gap:4px;">
-        <button class="nav-btn" onclick="toggleZoom()">[Z]</button>
-        <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECO</button>
-        <button class="nav-btn" style="background:#10b981" onclick="calLogin()">SYNC</button>
-        <button class="nav-btn" onclick="navMonth(-1)">&lt;</button>
-        <button class="nav-btn" onclick="navMonth(1)">&gt;</button>
-    </div>
-</header>
-
-<div class="grid" id="mainGrid">
-    <div class="h-r">
-        <div class="c c-fix-nr c-sticky">Nr</div>
-        <div class="c c-fix-zi c-sticky c-date">Zi</div>
-        <div class="c">LUNARE</div>
-        <div class="c">CURENTE</div>
-        <div class="c">ANUALE</div>
-    </div>
-    <div id="gridBody"></div>
-</div>
-
-<div class="cmd-bar">
-    <input type="text" id="cmdInput" style="flex:1; padding:10px; font-size: 16px; border:1px solid #ccc; border-radius:5px;" placeholder="15RLPizza | 12D21 | 15NNota">
-    <button onclick="runCommand()" style="margin-left:5px; padding:10px; background:#2563EB; color:white; border:none; font-weight:bold; border-radius:5px;">OK</button>
-</div>
-
-<!-- Modale -->
-<div id="traceModal" class="modal"><div class="m-box"><h3>Trace</h3><textarea id="traceArea" readonly></textarea><button class="nav-btn" onclick="copyTrace()" style="width:100%;margin-top:10px;">Copiază</button><button class="nav-btn" onclick="closeModal()" style="width:100%;margin-top:5px;">Închide</button></div></div>
-<div id="descModal" class="modal"><div class="m-box"><h3 style="font-size:14px;margin:0;">Detalii</h3><textarea id="descText"></textarea><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ÎNCHIDE</button><button class="nav-btn" style="flex:1;background:#2563EB;" onclick="document.getElementById('btnSaveDesc').click()">SALVEAZĂ</button><button id="btnSaveDesc" style="display:none"></button></div></div></div>
-<div id="editModal" class="modal"><div class="m-box"><h3 id="modalTitle">Nou</h3><input type="text" id="evName" style="width:100%;padding:10px;border:1px solid #ccc;"><inp
+                var xhr1 = new XMLHttpRequest();
+                xhr1.op
