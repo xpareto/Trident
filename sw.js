@@ -1,9 +1,10 @@
 var CACHE = 'trident-cache-v59';
 var FILES = [
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', function(e) {
@@ -27,27 +28,27 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 
-// Fetch handler complet — necesar pentru instalare PWA
-// Share target NU e interceptat — URL ajunge direct la handleIncomingShare()
 self.addEventListener('fetch', function(e) {
+  // Ignoră cererile către Google API pentru cache local
+  if (e.request.url.includes('googleapi')) {
+    return fetch(e.request);
+  }
+
   e.respondWith(
     caches.match(e.request).then(function(cached) {
-      return cached || fetch(e.request).then(function(resp) {
+      if (cached) return cached;
+      return fetch(e.request).then(function(resp) {
+        // Punem în cache doar fișierele proprii valid
         if (resp && resp.status === 200 && resp.type === 'basic') {
           var clone = resp.clone();
-    
-
-      caches.open(CACHE).then(function(cache) {
+          caches.open(CACHE).then(function(cache) {
             cache.put(e.request, clone);
           });
         }
         return resp;
       });
     }).catch(function() {
-      return caches.match('/index.html');
+      return caches.match('./index.html');
     })
   );
 });
-
-
-
