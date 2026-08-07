@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v41) -->
+<!-- START OF FILE: index.html (Trident v42) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v41</title>
+    <title>Trident v42</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -21,6 +21,8 @@
         .hdr { background: #1e293b; color: white; padding: 5px 10px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 2000; height: 45px; }
         .v-badge { background: #2563EB; color: white; padding: 2px 4px; border-radius: 3px; font-size: 9px; font-weight: bold; }
         .nav-btn { background: #334155; color: white; border: 1px solid #475569; border-radius: 4px; padding: 5px 8px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .nav-btn.eco-active { background: #16a34a; border-color: #15803d; }
+        .nav-btn.eco-inactive { background: #6b7280; border-color: #4b5563; }
 
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 80px; }
         .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 10px; position: sticky; top: 45px; z-index: 1500; border-bottom: 2px solid #94a3b8; height: 38px; }
@@ -60,10 +62,10 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v41</div>
+    <div class="v-badge" onclick="location.reload()">v42</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
-        <button class="nav-btn" onclick="toggleZoom()">[Z]</button>
+        <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
         <button id="btnEco" class="nav-btn" onclick="toggleEco()">ECO</button>
         <button class="nav-btn sync" style="background:#10b981" onclick="calLogin()">SYNC</button>
         <button class="nav-btn" onclick="navMonth(-1)">&lt;</button>
@@ -103,11 +105,12 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v41') || localStorage.getItem('trident_db_v40') || localStorage.getItem('trident_db_v39') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v41') || localStorage.getItem('trident_j_v40') || localStorage.getItem('trident_j_v39') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v42') || localStorage.getItem('trident_db_v41') || localStorage.getItem('trident_db_v40') || localStorage.getItem('trident_db_v39') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v42') || localStorage.getItem('trident_j_v41') || localStorage.getItem('trident_j_v40') || localStorage.getItem('trident_j_v39') || '{}');
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
+            applyEcoStyle();
             if(window.location.hash.indexOf('access_token') > -1) handleGoogleCallback();
             else { renderCalendar(); if(localStorage.getItem('gcal_token')) syncGoogle(); }
         } catch(e) { console.error(e); }
@@ -129,10 +132,11 @@
 
     async function syncGoogle() {
         var token = localStorage.getItem('gcal_token'); if (!token) return;
-        var start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
+        // start extins cu o luna in urma, ca sa putem detecta restantele (sarcini nebifate) din luna precedenta
+        var start = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1).toISOString();
         var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
         try {
-            // PAS 1: aparitiile (instances) lunii curente - pentru afisare pe zile
+            // PAS 1: aparitiile (instances) lunii curente + luna precedenta (pentru restante) - pentru afisare pe zile
             var r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
             var d = await r.json();
             if (d.items) {
@@ -165,6 +169,16 @@
         syncGoogle();
     }
 
+    // Calculeaza o data plecand de la 'base', adaugand n unitati: Z=zile(implicit), S=saptamani, L=luni
+    function relDate(base, n, u) {
+        var d = new Date(base);
+        u = (u || 'Z').toUpperCase();
+        if (u === 'S') d.setDate(d.getDate() + n * 7);
+        else if (u === 'L') d.setMonth(d.getMonth() + n);
+        else d.setDate(d.getDate() + n);
+        return d;
+    }
+
     // Recurenta LOCALA (offline, fara token Google): verifica daca ziua curenta e o aparitie a evenimentului ev
     function isRecurrenceMatch(ev, curDt) {
         var base = new Date(ev.y, ev.m, ev.d);
@@ -194,7 +208,31 @@
         var dayNames = ["DU", "LU", "MA", "MI", "JO", "VI", "SA"], monthNames = ["Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie", "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"];
         document.getElementById('mLabel').innerHTML = monthNames[M] + " " + Y;
         var lastDay = new Date(Y, M + 1, 0).getDate();
-        
+
+        // RESTANTE: sarcini nebifate (done:false) datate strict inainte de ziua 1 a lunii afisate
+        var firstOfMonth = new Date(Y, M, 1);
+        var overdue = localDB.concat(googleEvents).filter(function(ev) {
+            if (ev.done || ev.rec) return false;
+            var evDt = new Date(ev.y, ev.m, ev.d);
+            return evDt < firstOfMonth;
+        }).sort(function(a, b) { return (new Date(a.y, a.m, a.d)) - (new Date(b.y, b.m, b.d)); });
+        var ovZone = document.getElementById('overdueZone'), ovContent = document.getElementById('overdueContent');
+        if (overdue.length) {
+            var ovHtml = "";
+            overdue.forEach(function(ev) {
+                var edt = new Date(ev.y, ev.m, ev.d);
+                ovHtml += '<div class="ev-item pending">';
+                ovHtml += '<input type="checkbox" class="chk" onclick="tglStatus(\''+ev.id+'\', '+!!ev.isG+')">';
+                ovHtml += '<span class="ev-txt" onclick="'+(ev.isG?('window.open(\''+ev.link+'\',\'_blank\')'):'')+'">'+(ev.isG?"☁️ ":"• ")+edt.getDate()+'.'+(edt.getMonth()+1)+' - '+ev.n+'</span>';
+                ovHtml += '<div class="btn-i '+(ev.desc?'has-info':'')+'" onclick="openDesc(\''+ev.id+'\','+!!ev.isG+')">i</div>';
+                ovHtml += '<div class="btn-x" onclick="delEv(\''+ev.id+'\','+!!ev.isG+')">×</div></div>';
+            });
+            ovContent.innerHTML = ovHtml;
+            ovZone.style.display = 'block';
+        } else {
+            ovZone.style.display = 'none';
+        }
+
         var html = "";
         for (var d = 1; d <= lastDay; d++) {
             var curDt = new Date(Y, M, d), isToday = (curDt.toDateString() === now.toDateString()), isWE = (curDt.getDay() % 6 === 0), key = Y+"-"+M+"-"+d;
@@ -237,7 +275,29 @@
     function runCommand() {
         var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
         var curM = viewDate.getMonth(), curY = viewDate.getFullYear();
-        
+
+        // 0. Date relative "peste N zile/saptamani/luni": +N (zile implicit), +Ns (saptamani), +Nl (luni)
+        //    Interval: +N[u]-+M[u] Text  (ex: +3s-+5s Vacanta = peste 3 pana peste 5 saptamani)
+        var today0 = new Date(); today0.setHours(0,0,0,0);
+        var mRelInt = val.match(/^\+(\d+)([zsl])?\s*-\s*\+(\d+)([zsl])?\s+(.*)$/i);
+        if (mRelInt) {
+            var n1 = parseInt(mRelInt[1]), u1 = mRelInt[2] || 'z', n2 = parseInt(mRelInt[3]), u2 = mRelInt[4] || 'z', txR = mRelInt[5];
+            var dS = relDate(today0, n1, u1), dE = relDate(today0, n2, u2);
+            if (dE < dS) { var tmp = dS; dS = dE; dE = tmp; }
+            var durR = Math.round((dE - dS) / 86400000) + 1;
+            localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false });
+            saveAll(); viewDate = new Date(dS.getFullYear(), dS.getMonth(), 1); googleEvents = []; renderCalendar(); syncGoogle();
+            inp.value = ""; return;
+        }
+        var mRel = val.match(/^\+(\d+)([zsl])?\s+(.*)$/i);
+        if (mRel) {
+            var nR = parseInt(mRel[1]), uR = mRel[2] || 'z', txR2 = mRel[3];
+            var dR = relDate(today0, nR, uR);
+            localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false });
+            saveAll(); viewDate = new Date(dR.getFullYear(), dR.getMonth(), 1); googleEvents = []; renderCalendar(); syncGoogle();
+            inp.value = ""; return;
+        }
+
         // 1. Stergere (12D21)
         var mDel = val.match(/^(\d{1,2})D([1-3])(\d+)/i);
         if(mDel) {
@@ -282,12 +342,13 @@
     function openDesc(id, isG, isJ) { activeDescRef={id:id,isG:isG,isJ:!!isJ}; var t=isJ?journalData[id]:localDB.concat(googleEvents).find(function(x){return x.id===id}).desc; document.getElementById('descText').value=t||""; document.getElementById('descModal').style.display='flex'; }
     document.getElementById('btnSaveDesc').onclick = async function() { var t=document.getElementById('descText').value; if(activeDescRef.isJ) journalData[activeDescRef.id]=t; else if(activeDescRef.isG){ var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+activeDescRef.id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({description:t})}); syncGoogle(); } else { var e=localDB.find(function(x){return x.id===activeDescRef.id}); if(e) e.desc=t; } saveAll(); closeModal(); renderCalendar(); };
     function toggleZoom() { zoomLevel=(zoomLevel+1)%3; applyZoom(); localStorage.setItem('trident_zoom', zoomLevel); renderCalendar(); }
-    function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel===1) document.body.classList.add('compact'); if(zoomLevel===2) document.body.classList.add('mini'); }
+    function applyZoom() { document.body.classList.remove('compact', 'mini'); if(zoomLevel===1) document.body.classList.add('compact'); if(zoomLevel===2) document.body.classList.add('mini'); var lbl=document.getElementById('zoomLbl'); if(lbl) lbl.textContent = (zoomLevel+1); }
+    function applyEcoStyle() { var b=document.getElementById('btnEco'); if(!b) return; b.classList.remove('eco-active','eco-inactive'); b.classList.add(ecoMode ? 'eco-active' : 'eco-inactive'); }
     function openAddModal(d, t) { editRef={d:d,t:t}; document.getElementById('editModal').style.display='flex'; }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v41', JSON.stringify(localDB)); localStorage.setItem('trident_j_v41', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v42', JSON.stringify(localDB)); localStorage.setItem('trident_j_v42', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
-    function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); renderCalendar(); }
+    function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
     function handleGoogleCallback() { var p=new URLSearchParams(window.location.hash.substring(1)); var t=p.get('access_token'); if(t){localStorage.setItem('gcal_token',t); window.location.hash=""; syncGoogle();} }
     async function tglStatus(id, isG) { var ev=localDB.concat(googleEvents).find(function(x){return x.id===id}); if(!ev)return; if(isG){ ev.done=!ev.done; var tk=localStorage.getItem('gcal_token'); await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}); syncGoogle(); } else { ev.done=!ev.done; saveAll(); renderCalendar(); } }
