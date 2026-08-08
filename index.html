@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v43) -->
+<!-- START OF FILE: index.html (Trident v44) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v43</title>
+    <title>Trident v44</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -56,6 +56,8 @@
         .cmd-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f1f5f9; padding: 6px; display: flex; border-top: 2px solid #2563EB; z-index: 2000; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center; padding: 15px; }
         .m-box { background: white; padding: 15px; border-radius: 8px; width: 95%; max-width: 400px; color: black; }
+        .m-box-lg { width: 95%; max-width: 700px; height: 80vh; display: flex; flex-direction: column; }
+        .m-box-lg textarea { flex: 1; height: auto; font-size: 15px; }
         textarea { width: 100%; height: 120px; font-family: inherit; margin-top: 10px; border: 1px solid #ccc; border-radius: 5px; padding: 8px; }
     </style>
 </head>
@@ -63,7 +65,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v43</div>
+    <div class="v-badge" onclick="location.reload()">v44</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -71,8 +73,19 @@
         <button class="nav-btn sync" style="background:#10b981" onclick="calLogin()">SYNC</button>
         <button class="nav-btn" onclick="navMonth(-1)">&lt;</button>
         <button class="nav-btn" onclick="navMonth(1)">&gt;</button>
+        <button class="nav-btn" style="background:#7c3aed" onclick="toggleDbgPanel()">🐞</button>
     </div>
 </header>
+
+<div id="dbgPanel" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:4000; flex-direction:column; padding:15px;">
+    <h3 style="color:white; margin:0 0 10px 0; font-size:14px;">Jurnal de depanare</h3>
+    <textarea id="dbgText" readonly style="flex:1; background:#111; color:#0f0; font-family:monospace; font-size:11px; border:1px solid #444;"></textarea>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="nav-btn" style="flex:1; background:#ccc; color:black;" onclick="toggleDbgPanel()">ÎNCHIDE</button>
+        <button class="nav-btn" style="flex:1; background:#2563EB;" onclick="copyDbgLog()">COPIAZĂ ÎN CLIPBOARD</button>
+        <button class="nav-btn" style="flex:1; background:#ef4444;" onclick="debugLog=[]; document.getElementById('dbgText').value='';">GOLEȘTE</button>
+    </div>
+</div>
 
 <div id="overdueZone" style="display:none; background:#fee2e2; border:2px solid #ef4444; margin:5px; padding:8px; border-radius:8px;">
     <div style="color:#b91c1c; font-weight:900; font-size:10px; text-transform:uppercase;">Restanțe</div>
@@ -96,18 +109,40 @@
 </div>
 
 <!-- Modalele raman neschimbate (Edit, Desc) -->
-<div id="descModal" class="modal"><div class="m-box"><h3 style="font-size:14px;margin:0;">Detalii</h3><textarea id="descText"></textarea><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ÎNCHIDE</button><button class="nav-btn" style="flex:1;background:#2563EB;" id="btnSaveDesc">SALVEAZĂ</button></div></div></div>
+<div id="descModal" class="modal"><div class="m-box m-box-lg"><h3 style="font-size:14px;margin:0;">Detalii</h3><textarea id="descText"></textarea><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ÎNCHIDE</button><button class="nav-btn" style="flex:1;background:#2563EB;" id="btnSaveDesc">SALVEAZĂ</button></div></div></div>
 <div id="editModal" class="modal"><div class="m-box"><h3 id="modalTitle">Nou</h3><input type="text" id="evName" placeholder="Nume" style="width:100%;padding:10px;border:1px solid #ccc;"><input type="number" id="evDur" value="1" style="width:100%;padding:10px;margin-top:10px;border:1px solid #ccc;"><small style="color:#94a3b8;">Durată în zile (inclusiv prima zi). Ex: 7→14 inclusiv = 8 zile. Sau folosește direct comanda <code>7-14 Text</code> în consolă, care calculează automat.</small><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ANULARE</button><button class="nav-btn" style="flex:1;background:var(--accent);" id="btnSave">SALVEAZĂ</button></div></div></div>
 
 <script>
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
-    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null;
+    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null, debugLog = [];
+
+    function logDbg(msg) {
+        var t = new Date().toLocaleTimeString();
+        debugLog.push(t + ' - ' + msg);
+        if (debugLog.length > 300) debugLog.shift();
+        var el = document.getElementById('dbgText');
+        if (el && document.getElementById('dbgPanel').style.display !== 'none') { el.value = debugLog.join('\n'); el.scrollTop = el.scrollHeight; }
+    }
+    function toggleDbgPanel() {
+        var p = document.getElementById('dbgPanel');
+        if (p.style.display === 'none') { p.style.display = 'flex'; document.getElementById('dbgText').value = debugLog.join('\n'); }
+        else p.style.display = 'none';
+    }
+    function copyDbgLog() {
+        var txt = debugLog.join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(txt).then(function(){ alert('Copiat! Lipește-l în chat.'); });
+        } else {
+            var el = document.getElementById('dbgText'); el.select(); document.execCommand('copy');
+            alert('Copiat (metoda veche)! Lipește-l în chat.');
+        }
+    }
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v43') || localStorage.getItem('trident_db_v42') || localStorage.getItem('trident_db_v41') || localStorage.getItem('trident_db_v40') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v43') || localStorage.getItem('trident_j_v42') || localStorage.getItem('trident_j_v41') || localStorage.getItem('trident_j_v40') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v44') || localStorage.getItem('trident_db_v43') || localStorage.getItem('trident_db_v42') || localStorage.getItem('trident_db_v41') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v44') || localStorage.getItem('trident_j_v43') || localStorage.getItem('trident_j_v42') || localStorage.getItem('trident_j_v41') || '{}');
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
@@ -132,14 +167,17 @@
     }
 
     async function syncGoogle() {
-        var token = localStorage.getItem('gcal_token'); if (!token) return;
+        var token = localStorage.getItem('gcal_token');
+        if (!token) { logDbg('syncGoogle: NU există token Google salvat — nu se face nimic. Apasă SYNC și autentifică-te din nou.'); return; }
         // start extins cu o luna in urma, ca sa putem detecta restantele (sarcini nebifate) din luna precedenta
         var start = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1).toISOString();
         var end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        logDbg('syncGoogle: pornit, interval '+start+' → '+end);
         try {
             // PAS 1: aparitiile (instances) lunii curente + luna precedenta (pentru restante) - pentru afisare pe zile
             var r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
             var d = await r.json();
+            logDbg('syncGoogle: raspuns HTTP '+r.status+', '+(d.items?d.items.length:0)+' instante primite'+(d.error?(' — EROARE API: '+JSON.stringify(d.error)):''));
             if (d.items) {
                 // PAS 2: evenimentele "master" (recurente) - singurul loc unde exista campul recurrence/RRULE real
                 var rM = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=false", { headers: { Authorization: "Bearer " + token } });
@@ -158,7 +196,7 @@
                 });
                 renderCalendar();
             }
-        } catch (e) { renderCalendar(); }
+        } catch (e) { logDbg('syncGoogle: EXCEPȚIE — '+e.message); renderCalendar(); }
     }
 
     // Creeaza un eveniment REAL recurent direct in Google Calendar (RRULE), ca sa apara automat in toate lunile viitoare
@@ -211,11 +249,14 @@
         var lastDay = new Date(Y, M + 1, 0).getDate();
 
         // RESTANTE: sarcini nebifate (done:false) datate strict inainte de ziua 1 a lunii afisate
+        // v44 - Rest1: prag temporar (1 august 2026) cat esti la inceputul testarii, ca sa nu vezi restante
+        // dinainte sa fi inceput sa bifezi cu adevarat. Sterge linia RESTANTE_CUTOFF cand nu mai ai nevoie de ea.
+        var RESTANTE_CUTOFF = new Date(2026, 7, 1); // 1 august 2026
         var firstOfMonth = new Date(Y, M, 1);
         var overdue = localDB.concat(googleEvents).filter(function(ev) {
             if (ev.done || ev.rec) return false;
             var evDt = new Date(ev.y, ev.m, ev.d);
-            return evDt < firstOfMonth;
+            return evDt < firstOfMonth && evDt >= RESTANTE_CUTOFF;
         }).sort(function(a, b) { return (new Date(a.y, a.m, a.d)) - (new Date(b.y, b.m, b.d)); });
         var ovZone = document.getElementById('overdueZone'), ovContent = document.getElementById('overdueContent');
         if (overdue.length) {
@@ -240,16 +281,21 @@
             var dayEvs = localDB.concat(googleEvents).filter(function(ev){ 
                 if (ev.rec) return isRecurrenceMatch(ev, curDt);
                 var start = new Date(ev.y, ev.m, ev.d), end = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
-                return (d === ev.d || d === (ev.d + ev.dur - 1)) && curDt >= start && curDt <= end;
+                return curDt >= start && curDt <= end;
             });
-            if (ecoMode && curDt < now && !isToday && !dayEvs.some(function(x){return !x.done})) continue;
+            if (ecoMode && curDt < now && !isToday && !journalData[key] && !dayEvs.some(function(x){return !x.done})) continue;
 
             html += '<div class="r '+(isToday?'today':'')+' '+(isWE?'weekend':'')+'" '+(isToday?'id="scroll-today"':'')+'>';
             html += '<div class="c c-fix-nr c-sticky">'+d+'</div><div class="c c-fix-zi c-sticky c-date">'+dayNames[curDt.getDay()]+'</div>';
             ['m','c','a'].forEach(function(type) {
                 html += '<div class="c" onclick="openAddModal('+d+',\''+type+'\')">';
                 dayEvs.filter(function(x){return x.t === type}).forEach(function(ev){
-                    var disp = ev.n; if(ev.dur > 1) disp = (d === ev.d) ? "(1:"+ev.dur+") "+ev.n : "<b>FINAL</b> "+ev.n;
+                    // v44: start/final se determina prin comparatie de DATE reale, nu prin cifra bruta a zilei
+                    // (o cifra de zi, ex. 4, se putea repeta in fiecare luna a intervalului - bug la intervale intre luni)
+                    var evStartDt = new Date(ev.y, ev.m, ev.d), evEndDt = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
+                    var isStart = curDt.getTime() === evStartDt.getTime(), isEnd = curDt.getTime() === evEndDt.getTime();
+                    if (ev.dur > 1 && !isStart && !isEnd) return; // zi intermediara a intervalului - nu afisam, ca sa nu aglomeram
+                    var disp = ev.n; if(ev.dur > 1) disp = isStart ? "(1:"+ev.dur+") "+ev.n : "<b>FINAL</b> "+ev.n;
                     var itemS = ev.done ? "done" : "pending";
                     // v43: un click = editeaza evenimentul EXISTENT; dublu-click = deschide adaugare NOU pe aceeasi zi/coloana
                     html += '<div class="ev-item '+itemS+'" onclick="event.stopPropagation(); openEditModal(\''+ev.id+'\','+!!ev.isG+')" ondblclick="event.stopPropagation(); openAddModal('+d+',\''+type+'\')">';
@@ -277,6 +323,7 @@
     function runCommand() {
         var inp = document.getElementById('cmdInput'), val = inp.value.trim(); if(!val) return;
         var curM = viewDate.getMonth(), curY = viewDate.getFullYear();
+        logDbg('Comandă primită: "'+val+'"');
 
         // 0. Date relative "peste N zile/saptamani/luni": +N (zile implicit), +Ns (saptamani), +Nl (luni)
         //    Interval: +N[u]-+M[u] Text  (ex: +3s-+5s Vacanta = peste 3 pana peste 5 saptamani)
@@ -289,6 +336,7 @@
             var durR = Math.round((dE - dS) / 86400000) + 1;
             localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false });
             saveAll(); viewDate = new Date(dS.getFullYear(), dS.getMonth(), 1); googleEvents = []; renderCalendar(); syncGoogle();
+            logDbg('→ Recunoscut ca: interval relativ ("peste N-M"). Creat: '+dS.toDateString()+' → '+dE.toDateString());
             inp.value = ""; return;
         }
         var mRel = val.match(/^\+(\d+)([zsl])?\s*(.*)$/);
@@ -297,6 +345,20 @@
             var dR = relDate(today0, nR, uR);
             localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false });
             saveAll(); viewDate = new Date(dR.getFullYear(), dR.getMonth(), 1); googleEvents = []; renderCalendar(); syncGoogle();
+            logDbg('→ Recunoscut ca: dată relativă ("peste N"). Creat pe: '+dR.toDateString());
+            inp.value = ""; return;
+        }
+
+        // 0c. Interval INTRE LUNI diferite (4.7-30.9 Text = din 4 iulie pana in 30 septembrie)
+        var mCross = val.match(/^(\d{1,2})\.(\d{1,2})-(\d{1,2})\.(\d{1,2})\s*(.*)$/);
+        if (mCross) {
+            var d1 = parseInt(mCross[1]), m1 = parseInt(mCross[2]) - 1, d2 = parseInt(mCross[3]), m2 = parseInt(mCross[4]) - 1, txCross = mCross[5] || '';
+            var yS = curY, yE = (m2 < m1) ? curY + 1 : curY;
+            var dtS = new Date(yS, m1, d1), dtE = new Date(yE, m2, d2);
+            if (dtE < dtS) { var tmpDt = dtS; dtS = dtE; dtE = tmpDt; }
+            var durCross = Math.round((dtE - dtS) / 86400000) + 1;
+            localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false });
+            saveAll(); renderCalendar(); logDbg('Interval intre luni: '+mCross[0]+' → '+durCross+' zile, start '+dtS.toDateString());
             inp.value = ""; return;
         }
 
@@ -307,7 +369,8 @@
             if (dEnd < dStart) { var tmpD = dStart; dStart = dEnd; dEnd = tmpD; }
             var durRange = dEnd - dStart + 1;
             localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false });
-            saveAll(); renderCalendar(); inp.value = ""; return;
+            saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: interval in aceeasi luna, '+durRange+' zile.');
+            inp.value = ""; return;
         }
 
         // 1. Stergere (12D21)
@@ -315,14 +378,15 @@
         if(mDel) {
             var d = parseInt(mDel[1]), colI = parseInt(mDel[2]), rowI = parseInt(mDel[3]);
             var type = colI === 1 ? 'm' : colI === 2 ? 'c' : 'a';
-            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type; });
-            if(evs[rowI-1]) delEv(evs[rowI-1].id, !!evs[rowI-1].isG);
+            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type && e.m === curM && e.y === curY; });
+            if(evs[rowI-1]) { delEv(evs[rowI-1].id, !!evs[rowI-1].isG); logDbg('→ Recunoscut ca: ștergere. Găsit și șters: "'+evs[rowI-1].n+'"'); }
+            else logDbg('→ Recunoscut ca: ștergere, dar NU am găsit niciun eveniment pe ziua '+d+', coloana '+colI+', rândul '+rowI+' (în luna curent afișată).');
             inp.value = ""; return;
         }
 
         // 2. Nota (15NText)
         var mNote = val.match(/^(\d{1,2})N\s*(.*)/i);
-        if(mNote) { journalData[curY+'-'+curM+'-'+parseInt(mNote[1])] = mNote[2]; saveAll(); renderCalendar(); inp.value = ""; return; }
+        if(mNote) { journalData[curY+'-'+curM+'-'+parseInt(mNote[1])] = mNote[2]; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă de jurnal pe ziua '+parseInt(mNote[1])+': "'+mNote[2]+'"'); inp.value = ""; return; }
 
         // 3. Adaugare Rapida (15RLGaz sau 15Gaz) - R[n][S/L/A] = recurenta REALA, nu doar eticheta de coloana
         var mEv = val.match(/^(\d{1,2})(R(\d*)([SLA]))?\s*(.*)/i);
@@ -336,17 +400,23 @@
                 if (localStorage.getItem('gcal_token')) {
                     // recurenta reala pe Google Calendar -> apare automat, in fiecare luna/saptamana/an viitor
                     addRecurringToGoogle(day, curM, curY, name, freq, interval);
+                    logDbg('→ Recunoscut ca: recurență REALĂ trimisă spre Google ('+freq+', interval '+interval+').');
                 } else {
                     // fallback offline: recurenta locala, expandata automat de renderCalendar() in lunile viitoare
                     localDB.push({ id:'L'+Date.now(), d:day, m:curM, y:curY, t:cat, n:name, dur:1, done:false, rec:{freq:freq, interval:interval} });
                     saveAll(); renderCalendar();
+                    logDbg('→ Recunoscut ca: recurență LOCALĂ (offline, fără token Google), '+freq+'.');
                 }
             } else {
                 localDB.push({ id:'L'+Date.now(), d:day, m:curM, y:curY, t:cat, n:name, dur:1, done:false });
                 saveAll(); renderCalendar();
+                logDbg('→ Recunoscut ca: adăugare punctuală pe ziua '+day+', coloana "'+cat+'": "'+name+'"');
             }
             inp.value = "";
+            return;
         }
+
+        logDbg('→ NERECUNOSCUT — nicio regulă de sintaxă nu s-a potrivit cu "'+val+'". Nimic nu a fost creat.');
     }
 
     // Mentinem restul functiilor din v39...
@@ -365,7 +435,8 @@
     }
     function openEditModal(id, isG) {
         var ev = localDB.concat(googleEvents).find(function(x){ return x.id === id; });
-        if (!ev) return;
+        logDbg('openEditModal: id='+id+' isG='+isG+' găsit='+(!!ev)+(ev?(' text-actual="'+ev.n+'"'):''));
+        if (!ev) { logDbg('openEditModal: OPRIT — evenimentul nu a fost găsit în localDB/googleEvents.'); return; }
         editRef = { isEdit:true, id:id, isG:isG, d:ev.d, m:ev.m, y:ev.y, t:ev.t };
         document.getElementById('modalTitle').textContent = 'Editează';
         document.getElementById('evName').value = ev.n;
@@ -373,7 +444,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v43', JSON.stringify(localDB)); localStorage.setItem('trident_j_v43', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v44', JSON.stringify(localDB)); localStorage.setItem('trident_j_v44', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
@@ -383,26 +454,31 @@
     document.getElementById('btnSave').onclick = async function() {
         var n = document.getElementById('evName').value.trim();
         var dur = parseInt(document.getElementById('evDur').value) || 1;
-        if (!n) { closeModal(); return; }
+        logDbg('btnSave apăsat: isEdit='+(editRef&&editRef.isEdit)+' id='+(editRef&&editRef.id)+' isG='+(editRef&&editRef.isG)+' text nou="'+n+'" dur='+dur);
+        if (!n) { logDbg('btnSave: OPRIT — numele e gol.'); closeModal(); return; }
         if (editRef.isEdit) {
             if (editRef.isG) {
                 var ev = googleEvents.find(function(x){ return x.id === editRef.id; });
                 var doneSuffix = (ev && ev.done) ? ' [OK]' : '';
                 var tk = localStorage.getItem('gcal_token');
                 // end.date la Google e EXCLUSIV (ziua urmatoare ultimei zile) - d + dur, nu d + dur - 1
-                await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+editRef.id, {
+                var respP = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+editRef.id, {
                     method:'PATCH', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' },
                     body: JSON.stringify({ summary: n + doneSuffix, start:{date:isoDate(editRef.y, editRef.m, editRef.d)}, end:{date:isoDate(editRef.y, editRef.m, editRef.d + dur)} })
                 });
+                logDbg('btnSave (Google): PATCH status='+respP.status);
                 syncGoogle();
             } else {
                 var e = localDB.find(function(x){ return x.id === editRef.id; });
+                logDbg('btnSave (local): găsit în localDB='+(!!e));
                 if (e) { e.n = n; e.dur = dur; }
                 saveAll(); renderCalendar();
+                logDbg('btnSave (local): salvat. localDB are acum '+localDB.length+' intrări.');
             }
         } else {
             localDB.push({ id:'L'+Date.now(), d:editRef.d, m:viewDate.getMonth(), y:viewDate.getFullYear(), t:editRef.t, n:n, dur:dur, done:false });
             saveAll(); renderCalendar();
+            logDbg('btnSave (nou): adăugat local pe ziua '+editRef.d);
         }
         closeModal();
     };
