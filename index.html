@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v46) -->
+<!-- START OF FILE: index.html (Trident v47) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v46</title>
+    <title>Trident v47</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -25,7 +25,7 @@
         .nav-btn.eco-inactive { background: #6b7280; border-color: #4b5563; }
 
         .grid { display: block; width: 100%; min-width: 850px; padding-bottom: 80px; }
-        @media (max-width: 850px) {
+        @media (max-width: 480px) {
             .grid { min-width: 0; }
         }
         .h-r { display: flex; width: 100%; background: #f1f5f9; font-weight: bold; font-size: 10px; position: sticky; top: 45px; z-index: 1500; border-bottom: 2px solid #94a3b8; height: 38px; }
@@ -74,7 +74,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v46</div>
+    <div class="v-badge" onclick="location.reload()">v47</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -165,8 +165,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v46') || localStorage.getItem('trident_db_v45') || localStorage.getItem('trident_db_v44') || localStorage.getItem('trident_db_v43') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v46') || localStorage.getItem('trident_j_v45') || localStorage.getItem('trident_j_v44') || localStorage.getItem('trident_j_v43') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v47') || localStorage.getItem('trident_db_v46') || localStorage.getItem('trident_db_v45') || localStorage.getItem('trident_db_v44') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v47') || localStorage.getItem('trident_j_v46') || localStorage.getItem('trident_j_v45') || localStorage.getItem('trident_j_v44') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -277,21 +277,24 @@
     }
 
     // Inlocuieste prescurtarile din comanda cu forma "zi.luna" pe care restul parser-ului o intelege deja
-    function preprocessShortcuts(val) {
+    function preprocessShortcuts(val, curY, curM) {
         var today = new Date(); today.setHours(0, 0, 0, 0);
-        // Interval cu shortcut pe ambele capete, stanga poate fi si "+N[u]" (ex: +2l-eom Chirie)
-        var mShortInt = val.match(/^(som|eom|sow|eow|soy|eoy|\+\d+[zsl]?)-(som|eom|sow|eow|soy|eoy)\b\s*(.*)$/i);
+        function resolveSide(tok, refDate) {
+            if (/^\d{1,2}$/.test(tok)) return new Date(curY, curM, parseInt(tok)); // zi simpla = ziua respectiva din luna vizualizata
+            if (/^\+/.test(tok)) { var mm = tok.match(/^\+(\d+)([zsl])?$/i); return relDate(refDate, parseInt(mm[1]), mm[2] || 'z'); }
+            return resolveToken(tok, refDate);
+        }
+        // Interval unde CEL PUTIN un capat e un shortcut sau "+N[u]" (ex: 10-eow, 19-eom, som-eom, +2l-eom)
+        // Daca ambele capete sunt cifre simple, lasam neatins - se ocupa deja regula "7-14" (acelasi comportament ca inainte)
+        var mShortInt = val.match(/^(\d{1,2}|som|eom|sow|eow|soy|eoy|\+\d+[zsl]?)-(\d{1,2}|som|eom|sow|eow|soy|eoy)\b\s*(.*)$/i);
         if (mShortInt) {
             var leftTok = mShortInt[1], rightTok = mShortInt[2], rest = mShortInt[3];
-            var leftDate;
-            if (/^\+/.test(leftTok)) {
-                var mm = leftTok.match(/^\+(\d+)([zsl])?$/i);
-                leftDate = relDate(today, parseInt(mm[1]), mm[2] || 'z');
-            } else {
-                leftDate = resolveToken(leftTok, today);
+            var bothPlainDays = /^\d{1,2}$/.test(leftTok) && /^\d{1,2}$/.test(rightTok);
+            if (!bothPlainDays) {
+                var leftDate = resolveSide(leftTok, today);
+                var rightDate = resolveSide(rightTok, leftDate); // eom din dreapta se raporteaza la luna capatului stang
+                return leftDate.getDate() + '.' + (leftDate.getMonth() + 1) + '-' + rightDate.getDate() + '.' + (rightDate.getMonth() + 1) + ' ' + rest;
             }
-            var rightDate = resolveToken(rightTok, leftDate); // eom din dreapta se raporteaza la luna calculata din stanga
-            return leftDate.getDate() + '.' + (leftDate.getMonth() + 1) + '-' + rightDate.getDate() + '.' + (rightDate.getMonth() + 1) + ' ' + rest;
         }
         // Shortcut simplu, la inceputul comenzii
         var mShort = val.match(/^(som|eom|sow|eow|soy|eoy)\b(.*)$/i);
@@ -435,7 +438,7 @@
         var hasTk = !!localStorage.getItem('gcal_token');
         logDbg('Comandă primită: "'+val+'" (token Google: '+hasTk+')');
 
-        val = preprocessShortcuts(val);
+        val = preprocessShortcuts(val, curY, curM);
         var remResult = extractRem(val);
         val = remResult.text;
         var remInfo = remResult.rem;
@@ -618,7 +621,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v46', JSON.stringify(localDB)); localStorage.setItem('trident_j_v46', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v47', JSON.stringify(localDB)); localStorage.setItem('trident_j_v47', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
@@ -635,12 +638,20 @@
                 var ev = googleEvents.find(function(x){ return x.id === editRef.id; });
                 var doneSuffix = (ev && ev.done) ? ' [OK]' : '';
                 var tk = localStorage.getItem('gcal_token');
-                // end.date la Google e EXCLUSIV (ziua urmatoare ultimei zile) - d + dur, nu d + dur - 1
+                var patchBody = { summary: n + doneSuffix };
+                // trimitem start/end DOAR daca durata s-a schimbat efectiv - altfel riscam sa stricam formatul original
+                // (evenimente cu ora, sau instante ale unei serii recurente, nu accepta start.date/end.date all-day pe PATCH)
+                if (ev && dur !== ev.dur) {
+                    // end.date la Google e EXCLUSIV (ziua urmatoare ultimei zile) - d + dur, nu d + dur - 1
+                    patchBody.start = { date: isoDate(editRef.y, editRef.m, editRef.d) };
+                    patchBody.end = { date: isoDate(editRef.y, editRef.m, editRef.d + dur) };
+                }
                 var respP = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+editRef.id, {
                     method:'PATCH', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' },
-                    body: JSON.stringify({ summary: n + doneSuffix, start:{date:isoDate(editRef.y, editRef.m, editRef.d)}, end:{date:isoDate(editRef.y, editRef.m, editRef.d + dur)} })
+                    body: JSON.stringify(patchBody)
                 });
-                logDbg('btnSave (Google): PATCH status='+respP.status);
+                var respTxt = respP.status >= 400 ? await respP.text() : '';
+                logDbg('btnSave (Google): PATCH status='+respP.status+(patchBody.start?' (cu schimbare durată)':' (doar text)')+(respTxt?(' — '+respTxt):''));
                 syncGoogle();
             } else {
                 var e = localDB.find(function(x){ return x.id === editRef.id; });
