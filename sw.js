@@ -1,4 +1,4 @@
-var CACHE = 'trident-cache-v49';
+var CACHE = 'trident-cache-v50';
 var FILES = [
   './',
   './index.html',

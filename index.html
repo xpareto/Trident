@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v49) -->
+<!-- START OF FILE: index.html (Trident v50) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v49</title>
+    <title>Trident v50</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v49</div>
+    <div class="v-badge" onclick="location.reload()">v50</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -158,8 +158,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v49') || localStorage.getItem('trident_db_v48') || localStorage.getItem('trident_db_v47') || localStorage.getItem('trident_db_v46') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v49') || localStorage.getItem('trident_j_v48') || localStorage.getItem('trident_j_v47') || localStorage.getItem('trident_j_v46') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || localStorage.getItem('trident_db_v48') || localStorage.getItem('trident_db_v47') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || localStorage.getItem('trident_j_v48') || localStorage.getItem('trident_j_v47') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -388,7 +388,7 @@
                 var start = new Date(ev.y, ev.m, ev.d), end = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
                 return curDt >= start && curDt <= end;
             });
-            var hasUnfinished = dayEvs.some(function(x){return !x.done});
+            var hasUnfinished = dayEvs.some(function(x){return !x.done && (x.dur || 1) === 1;});
             if (ecoMode && curDt < now && !isToday) {
                 logDbg('ECO ziua '+d+': dayEvs='+dayEvs.length+' nebifate='+hasUnfinished+' notă='+(!!journalData[key])+' → '+((!journalData[key] && !hasUnfinished) ? 'ASCUNSĂ' : 'afișată'));
             }
@@ -483,9 +483,11 @@
         }
 
         // 0b. Interval pe zile in aceeasi luna (7-14 Text) - calculeaza automat durata, elimina eroarea de calcul manual (off-by-one)
-        var mRange = val.match(/^(\d{1,2})-(\d{1,2})\s*(.*)$/);
+        // D2: daca lipseste ziua de start (ex: "-14 Text"), se considera ziua curenta (azi)
+        var mRange = val.match(/^(\d{1,2})?-(\d{1,2})\s*(.*)$/);
         if (mRange) {
-            var dStart = parseInt(mRange[1]), dEnd = parseInt(mRange[2]), txRange = mRange[3] || '';
+            var todayN = new Date();
+            var dStart = mRange[1] ? parseInt(mRange[1]) : todayN.getDate(), dEnd = parseInt(mRange[2]), txRange = mRange[3] || '';
             if (dEnd < dStart) { var tmpD = dStart; dStart = dEnd; dEnd = tmpD; }
             var durRange = dEnd - dStart + 1;
             if (hasTk) { addEventToGoogle(curY, curM, dStart, durRange, txRange); logDbg('→ interval în aceeași lună → trimis spre Google, '+durRange+' zile.'); }
@@ -494,50 +496,64 @@
             inp.value = ""; return;
         }
 
-        // 1. Stergere (12D21 sau 12.8D21 pentru alta luna)
-        var mDel = val.match(/^(\d{1,2})(?:\.(\d{1,2}))?D([1-3])(\d+)/i);
+        // 1. Stergere (12D21 sau 12.8D21 pentru alta luna) - D2: fara zi, se considera azi (ex: "D21")
+        var mDel = val.match(/^(?:(\d{1,2})(?:\.(\d{1,2}))?)?D([1-3])(\d+)/i);
         if(mDel) {
-            var d = parseInt(mDel[1]), delM = mDel[2] ? parseInt(mDel[2])-1 : curM, colI = parseInt(mDel[3]), rowI = parseInt(mDel[4]);
+            var todayD1 = new Date();
+            var d = mDel[1] ? parseInt(mDel[1]) : todayD1.getDate();
+            var delM = mDel[1] ? (mDel[2] ? parseInt(mDel[2])-1 : curM) : todayD1.getMonth();
+            var delY = mDel[1] ? curY : todayD1.getFullYear();
+            var colI = parseInt(mDel[3]), rowI = parseInt(mDel[4]);
             var type = colI === 1 ? 'm' : colI === 2 ? 'c' : 'a';
-            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type && e.m === delM && e.y === curY; });
+            var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type && e.m === delM && e.y === delY; });
             if(evs[rowI-1]) { delEv(evs[rowI-1].id, !!evs[rowI-1].isG); logDbg('→ Recunoscut ca: ștergere. Găsit și șters: "'+evs[rowI-1].n+'"'); }
             else logDbg('→ Recunoscut ca: ștergere, dar NU am găsit niciun eveniment pe ziua '+d+'.'+(delM+1)+', coloana '+colI+', rândul '+rowI+'.');
             inp.value = ""; return;
         }
 
-        // 2. Nota (15NText sau 14.8NText pentru alta luna) - trimisa la Google ca eveniment "📝 text" daca esti conectat
-        var mNote = val.match(/^(\d{1,2})(?:\.(\d{1,2}))?N\s*(.*)/i);
+        // 2. Nota (15NText sau 14.8NText pentru alta luna) - D2: fara zi, se considera azi (ex: "NNota")
+        var mNote = val.match(/^(?:(\d{1,2})(?:\.(\d{1,2}))?)?N\s*(.*)/i);
         if(mNote) {
-            var noteD = parseInt(mNote[1]), noteM = mNote[2] ? parseInt(mNote[2]) - 1 : curM, noteText = mNote[3];
-            var noteKey = curY+'-'+noteM+'-'+noteD;
+            var todayN1 = new Date();
+            var noteD = mNote[1] ? parseInt(mNote[1]) : todayN1.getDate();
+            var noteM = mNote[1] ? (mNote[2] ? parseInt(mNote[2]) - 1 : curM) : todayN1.getMonth();
+            var noteY = mNote[1] ? curY : todayN1.getFullYear();
+            var noteText = mNote[3];
+            var noteKey = noteY+'-'+noteM+'-'+noteD;
             var existGid = journalData[noteKey] && journalData[noteKey].gid;
-            if (hasTk) { upsertNoteGoogle(curY, noteM, noteD, noteText, existGid); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
+            if (hasTk) { upsertNoteGoogle(noteY, noteM, noteD, noteText, existGid); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
             else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); }
             inp.value = ""; return;
         }
 
-        // 3. Adaugare Rapida (15RLGaz, 15Gaz, sau 14.8Gaz pentru alta luna) - R[n][S/L/A] = recurenta REALA
-        var mEv = val.match(/^(\d{1,2})(?:\.(\d{1,2}))?(R(\d*)([SLA]))?\s*(.*)/i);
+        // 3. Adaugare Rapida (15RLGaz, 15Gaz, sau 14.8Gaz pentru alta luna) - R[n][S/L/A sau W/M/Y] = recurenta REALA
+        // D2: fara zi, se considera azi (ex: "Cumparaturi" -> azi, coloana CURENTE)
+        var mEv = val.match(/^(?:(\d{1,2})(?:\.(\d{1,2}))?)?(R(\d*)([SLAWMY]))?\s*(.*)/i);
         if(mEv) {
-            var day = parseInt(mEv[1]), evM = mEv[2] ? parseInt(mEv[2]) - 1 : curM, fullPref = mEv[3]||'', interval = parseInt(mEv[4]||'1'), letter = (mEv[5]||'').toUpperCase(), tx = mEv[6]||'';
+            var todayE1 = new Date();
+            var day = mEv[1] ? parseInt(mEv[1]) : todayE1.getDate();
+            var evM = mEv[1] ? (mEv[2] ? parseInt(mEv[2]) - 1 : curM) : todayE1.getMonth();
+            var evY = mEv[1] ? curY : todayE1.getFullYear();
+            var fullPref = mEv[3]||'', interval = parseInt(mEv[4]||'1'), letter = (mEv[5]||'').toUpperCase(), tx = mEv[6]||'';
             var cat = getCategory(fullPref||tx), name = (fullPref?fullPref+' ':'')+tx;
 
             if (letter) {
-                var freqMap = { L: 'MONTHLY', S: 'WEEKLY', A: 'YEARLY' };
+                // D1: R accepta acum si literele englezesti W/M/Y ca aliasuri pt S/L/A (Weekly/Monthly/Yearly)
+                var freqMap = { L: 'MONTHLY', M: 'MONTHLY', S: 'WEEKLY', W: 'WEEKLY', A: 'YEARLY', Y: 'YEARLY' };
                 var freq = freqMap[letter];
                 if (hasTk) {
-                    addRecurringToGoogle(day, evM, curY, name, freq, interval);
+                    addRecurringToGoogle(day, evM, evY, name, freq, interval);
                     logDbg('→ Recunoscut ca: recurență REALĂ trimisă spre Google ('+freq+', interval '+interval+').');
                 } else {
-                    localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:curY, t:cat, n:name, dur:1, done:false, rec:{freq:freq, interval:interval} });
+                    localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false, rec:{freq:freq, interval:interval} });
                     saveAll(); renderCalendar();
                     logDbg('→ Recunoscut ca: recurență LOCALĂ (offline, fără token Google), '+freq+'.');
                 }
-                if (remInfo) createReminder(new Date(curY, evM, day), remInfo, name);
+                if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             } else {
-                if (hasTk) { addEventToGoogle(curY, evM, day, 1, name); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
-                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:curY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
-                if (remInfo) createReminder(new Date(curY, evM, day), remInfo, name);
+                if (hasTk) { addEventToGoogle(evY, evM, day, 1, name); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
+                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
+                if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             }
             inp.value = "";
             return;
@@ -619,7 +635,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v49', JSON.stringify(localDB)); localStorage.setItem('trident_j_v49', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v50', JSON.stringify(localDB)); localStorage.setItem('trident_j_v50', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
