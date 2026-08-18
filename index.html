@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v50) -->
+<!-- START OF FILE: index.html (Trident v51) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v50</title>
+    <title>Trident v51</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v50</div>
+    <div class="v-badge" onclick="location.reload()">v51</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -158,8 +158,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || localStorage.getItem('trident_db_v48') || localStorage.getItem('trident_db_v47') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || localStorage.getItem('trident_j_v48') || localStorage.getItem('trident_j_v47') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v51') || localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || localStorage.getItem('trident_db_v48') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v51') || localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || localStorage.getItem('trident_j_v48') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -388,11 +388,19 @@
                 var start = new Date(ev.y, ev.m, ev.d), end = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
                 return curDt >= start && curDt <= end;
             });
-            var hasUnfinished = dayEvs.some(function(x){return !x.done && (x.dur || 1) === 1;});
+            var hasUnfinished = dayEvs.some(function(x){
+                if (x.done) return false;
+                if ((x.dur || 1) === 1) return true;
+                // Econ1: un interval multi-zi conteaza DOAR in ziua lui exacta de start, si doar daca a inceput in luna vizualizata
+                // (perioadele incepute intr-o luna precedenta sunt deja acoperite de cadranul de restante, nu mai fortam afisarea aici)
+                var xStart = new Date(x.y, x.m, x.d);
+                return curDt.getTime() === xStart.getTime() && x.m === M && x.y === Y;
+            });
             if (ecoMode && curDt < now && !isToday) {
-                logDbg('ECO ziua '+d+': dayEvs='+dayEvs.length+' nebifate='+hasUnfinished+' notă='+(!!journalData[key])+' → '+((!journalData[key] && !hasUnfinished) ? 'ASCUNSĂ' : 'afișată'));
+                logDbg('ECO ziua '+d+': dayEvs='+dayEvs.length+' nebifate='+hasUnfinished+' notă='+(!!journalData[key])+' → '+(!hasUnfinished ? 'ASCUNSĂ' : 'afișată'));
             }
-            if (ecoMode && curDt < now && !isToday && !journalData[key] && !hasUnfinished) continue;
+            // Econ2: notele NU mai fortează afișarea - nu trebuie bifate, deci o zi doar cu notă poate fi ascunsă
+            if (ecoMode && curDt < now && !isToday && !hasUnfinished) continue;
 
             html += '<div class="r '+(isToday?'today':'')+' '+(isWE?'weekend':'')+'" '+(isToday?'id="scroll-today"':'')+'>';
             html += '<div class="c c-fix-nr c-sticky">'+d+'</div><div class="c c-fix-zi c-sticky c-date">'+dayNames[curDt.getDay()]+'</div>';
@@ -635,7 +643,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v50', JSON.stringify(localDB)); localStorage.setItem('trident_j_v50', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v51', JSON.stringify(localDB)); localStorage.setItem('trident_j_v51', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
