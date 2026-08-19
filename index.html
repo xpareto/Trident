@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v51) -->
+<!-- START OF FILE: index.html (Trident v52) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v51</title>
+    <title>Trident v52</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v51</div>
+    <div class="v-badge" onclick="location.reload()">v52</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -112,12 +112,13 @@
 
 <!-- Modalele raman neschimbate (Edit, Desc) -->
 <div id="descModal" class="modal"><div class="m-box m-box-lg"><h3 style="font-size:14px;margin:0;">Detalii</h3><textarea id="descText"></textarea><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ÎNCHIDE</button><button class="nav-btn" style="flex:1;background:#2563EB;" id="btnSaveDesc">SALVEAZĂ</button></div></div></div>
+<div id="ambigModal" class="modal"><div class="m-box"><h3 style="font-size:14px;margin:0 0 10px 0;">Ce ai vrut să spui?</h3><div style="display:flex;flex-direction:column;gap:10px;"><button class="nav-btn" style="background:#334155;padding:12px;text-align:left;" onclick="resolveAmbig('note')" id="ambigNoteLabel">Notă</button><button class="nav-btn" style="background:#2563EB;padding:12px;text-align:left;" onclick="resolveAmbig('next')" id="ambigNextLabel">Ziua următoare</button></div></div></div>
 <div id="editModal" class="modal"><div class="m-box"><h3 id="modalTitle">Nou</h3><input type="text" id="evName" placeholder="Nume" style="width:100%;padding:10px;border:1px solid #ccc;"><input type="number" id="evDur" value="1" style="width:100%;padding:10px;margin-top:10px;border:1px solid #ccc;"><small style="color:#94a3b8;">Durată în zile (inclusiv prima zi). Ex: 7→14 inclusiv = 8 zile. Sau folosește direct comanda <code>7-14 Text</code> în consolă, care calculează automat.</small><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ANULARE</button><button class="nav-btn" style="flex:1;background:var(--accent);" id="btnSave">SALVEAZĂ</button></div></div></div>
 
 <script>
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
     var GCAL_REDIRECT = window.location.origin + window.location.pathname;
-    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null, debugLog = [];
+    var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null, debugLog = [], pendingAmbig = null;
 
     // Wrapper peste toate apelurile catre Google: daca sesiunea a expirat (401), explica clar userului ce sa faca
     var lastAuthAlertTs = 0;
@@ -158,8 +159,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v51') || localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || localStorage.getItem('trident_db_v48') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v51') || localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || localStorage.getItem('trident_j_v48') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v52') || localStorage.getItem('trident_db_v51') || localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v52') || localStorage.getItem('trident_j_v51') || localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -248,6 +249,18 @@
         if (u === 'S') d.setDate(d.getDate() + n * 7);
         else if (u === 'L') d.setMonth(d.getMonth() + n);
         else d.setDate(d.getDate() + n);
+        return d;
+    }
+
+    // Coduri zile saptamana: romana (L/MA/M/J/V/S/D) + engleza (MO/TU/WE/TH/FR/SA/SU) -> index JS (0=Duminica)
+    var WEEKDAY_CODE_MAP = { L:1, MA:2, M:3, J:4, V:5, S:6, D:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6, SU:0 };
+    var WEEKDAY_NAMES_RO = ['duminică','luni','marți','miercuri','joi','vineri','sâmbătă'];
+    // Calculeaza urmatoarea aparitie a unei zile din saptamana, STRICT dupa azi (daca azi e chiar ziua ceruta, sare la saptamana viitoare)
+    function nextWeekday(targetDow) {
+        var d = new Date(); d.setHours(0, 0, 0, 0);
+        var diff = (targetDow - d.getDay() + 7) % 7;
+        if (diff === 0) diff = 7;
+        d.setDate(d.getDate() + diff);
         return d;
     }
 
@@ -445,6 +458,33 @@
         logDbg('Comandă primită: "'+val+'" (token Google: '+hasTk+')');
 
         val = preprocessShortcuts(val, curY, curM);
+
+        // "U" + cod zi = ziua urmatoare de <zi> (fara ambiguitate cu nimic, se transforma direct in zi.luna si continua normal)
+        var mNextU = val.match(/^U(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        if (mNextU) {
+            var codeU = mNextU[1].toUpperCase(), dowU = WEEKDAY_CODE_MAP[codeU], ndU = nextWeekday(dowU);
+            logDbg('→ "U'+codeU+'" = ziua următoare de '+WEEKDAY_NAMES_RO[dowU]+' ('+ndU.toLocaleDateString('ro-RO')+').');
+            val = ndU.getDate() + '.' + (ndU.getMonth() + 1) + mNextU[2];
+        }
+
+        // "N" + cod zi = AMBIGUU (poate fi si o nota al carei text incepe chiar cu acel cod) -> cerem confirmare, nu ghicim
+        var mAmbigN = val.match(/^N(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        if (mAmbigN) {
+            var codeN = mAmbigN[1].toUpperCase(), restN = mAmbigN[2], dowN = WEEKDAY_CODE_MAP[codeN];
+            var todayA = new Date();
+            var noteTextC = (codeN.toLowerCase() + restN).replace(/^\s+/, '');
+            var noteKeyC = todayA.getFullYear() + '-' + todayA.getMonth() + '-' + todayA.getDate();
+            var ndC = nextWeekday(dowN);
+            pendingAmbig = {
+                y: todayA.getFullYear(), m: todayA.getMonth(), d: todayA.getDate(),
+                noteText: noteTextC, noteKey: noteKeyC,
+                nextDateStr: ndC.getDate() + '.' + (ndC.getMonth() + 1), restTxt: restN
+            };
+            logDbg('→ AMBIGUU: "'+val+'" — poate fi notă sau "ziua următoare de '+WEEKDAY_NAMES_RO[dowN]+'". Cer confirmare.');
+            showAmbig('Notă: "' + noteTextC + '"', 'Ziua următoare de ' + WEEKDAY_NAMES_RO[dowN] + ' (' + ndC.toLocaleDateString('ro-RO') + ')' + (restN.trim() ? (': "' + restN.trim() + '"') : ''));
+            inp.value = ""; return;
+        }
+
         var remResult = extractRem(val);
         val = remResult.text;
         var remInfo = remResult.rem;
@@ -632,6 +672,30 @@
         document.getElementById('evDur').value = 1;
         document.getElementById('editModal').style.display = 'flex';
     }
+    // Dialog de confirmare pentru coliziunile "mari" (comanda vs. text care arata la fel) - nu ghicim, intrebam
+    function showAmbig(noteLabel, nextLabel) {
+        document.getElementById('ambigNoteLabel').textContent = noteLabel;
+        document.getElementById('ambigNextLabel').textContent = nextLabel;
+        document.getElementById('ambigModal').style.display = 'flex';
+    }
+    function resolveAmbig(choice) {
+        document.getElementById('ambigModal').style.display = 'none';
+        if (!pendingAmbig) return;
+        var p = pendingAmbig; pendingAmbig = null;
+        if (choice === 'note') {
+            // executam direct crearea notei (NU repornim runCommand pe acelasi text, ca sa nu re-declansam aceeasi intrebare)
+            var hasTk2 = !!localStorage.getItem('gcal_token');
+            var existGid2 = journalData[p.noteKey] && journalData[p.noteKey].gid;
+            if (hasTk2) upsertNoteGoogle(p.y, p.m, p.d, p.noteText, existGid2);
+            else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); }
+            logDbg('Ambiguitate rezolvată de utilizator: NOTĂ — "'+p.noteText+'"');
+        } else {
+            document.getElementById('cmdInput').value = p.nextDateStr + p.restTxt;
+            logDbg('Ambiguitate rezolvată de utilizator: ziua următoare ('+p.nextDateStr+')');
+            runCommand();
+        }
+    }
+
     function openEditModal(id, isG) {
         var ev = localDB.concat(googleEvents).find(function(x){ return x.id === id; });
         logDbg('openEditModal: id='+id+' isG='+isG+' găsit='+(!!ev)+(ev?(' text-actual="'+ev.n+'"'):''));
@@ -643,7 +707,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v51', JSON.stringify(localDB)); localStorage.setItem('trident_j_v51', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v52', JSON.stringify(localDB)); localStorage.setItem('trident_j_v52', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
