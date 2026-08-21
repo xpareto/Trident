@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v52) -->
+<!-- START OF FILE: index.html (Trident v53) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v52</title>
+    <title>Trident v53</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v52</div>
+    <div class="v-badge" onclick="location.reload()">v53</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -112,7 +112,7 @@
 
 <!-- Modalele raman neschimbate (Edit, Desc) -->
 <div id="descModal" class="modal"><div class="m-box m-box-lg"><h3 style="font-size:14px;margin:0;">Detalii</h3><textarea id="descText"></textarea><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ÎNCHIDE</button><button class="nav-btn" style="flex:1;background:#2563EB;" id="btnSaveDesc">SALVEAZĂ</button></div></div></div>
-<div id="ambigModal" class="modal"><div class="m-box"><h3 style="font-size:14px;margin:0 0 10px 0;">Ce ai vrut să spui?</h3><div style="display:flex;flex-direction:column;gap:10px;"><button class="nav-btn" style="background:#334155;padding:12px;text-align:left;" onclick="resolveAmbig('note')" id="ambigNoteLabel">Notă</button><button class="nav-btn" style="background:#2563EB;padding:12px;text-align:left;" onclick="resolveAmbig('next')" id="ambigNextLabel">Ziua următoare</button></div></div></div>
+<div id="ambigModal" class="modal"><div class="m-box"><h3 style="font-size:14px;margin:0 0 10px 0;">Comanda ta poate fi înțeleasă în două feluri:</h3><div style="display:flex;flex-direction:column;gap:10px;"><button class="nav-btn" style="background:#334155;padding:12px;text-align:left;" onclick="resolveAmbig('note')" id="ambigNoteLabel">Notă</button><button class="nav-btn" style="background:#2563EB;padding:12px;text-align:left;" onclick="resolveAmbig('next')" id="ambigNextLabel">Ziua următoare</button></div></div></div>
 <div id="editModal" class="modal"><div class="m-box"><h3 id="modalTitle">Nou</h3><input type="text" id="evName" placeholder="Nume" style="width:100%;padding:10px;border:1px solid #ccc;"><input type="number" id="evDur" value="1" style="width:100%;padding:10px;margin-top:10px;border:1px solid #ccc;"><small style="color:#94a3b8;">Durată în zile (inclusiv prima zi). Ex: 7→14 inclusiv = 8 zile. Sau folosește direct comanda <code>7-14 Text</code> în consolă, care calculează automat.</small><div style="display:flex;gap:10px;margin-top:15px;"><button class="nav-btn" style="flex:1;background:#ccc;color:black;" onclick="closeModal()">ANULARE</button><button class="nav-btn" style="flex:1;background:var(--accent);" id="btnSave">SALVEAZĂ</button></div></div></div>
 
 <script>
@@ -159,8 +159,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v52') || localStorage.getItem('trident_db_v51') || localStorage.getItem('trident_db_v50') || localStorage.getItem('trident_db_v49') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v52') || localStorage.getItem('trident_j_v51') || localStorage.getItem('trident_j_v50') || localStorage.getItem('trident_j_v49') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v53') || localStorage.getItem('trident_db_v52') || localStorage.getItem('trident_db_v51') || localStorage.getItem('trident_db_v50') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v53') || localStorage.getItem('trident_j_v52') || localStorage.getItem('trident_j_v51') || localStorage.getItem('trident_j_v50') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -481,7 +481,11 @@
                 nextDateStr: ndC.getDate() + '.' + (ndC.getMonth() + 1), restTxt: restN
             };
             logDbg('→ AMBIGUU: "'+val+'" — poate fi notă sau "ziua următoare de '+WEEKDAY_NAMES_RO[dowN]+'". Cer confirmare.');
-            showAmbig('Notă: "' + noteTextC + '"', 'Ziua următoare de ' + WEEKDAY_NAMES_RO[dowN] + ' (' + ndC.toLocaleDateString('ro-RO') + ')' + (restN.trim() ? (': "' + restN.trim() + '"') : ''));
+            var eventTextC = restN.trim() || '(fără text)';
+            showAmbig(
+                'NOTĂ cu textul: "' + noteTextC + '"',
+                'EVENIMENT cu textul: "' + eventTextC + '", în următoarea ' + WEEKDAY_NAMES_RO[dowN] + ' (' + ndC.toLocaleDateString('ro-RO') + ')'
+            );
             inp.value = ""; return;
         }
 
@@ -707,7 +711,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v52', JSON.stringify(localDB)); localStorage.setItem('trident_j_v52', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v53', JSON.stringify(localDB)); localStorage.setItem('trident_j_v53', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
