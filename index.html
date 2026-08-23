@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v55) -->
+<!-- START OF FILE: index.html (Trident v56) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v55</title>
+    <title>Trident v56</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v55</div>
+    <div class="v-badge" onclick="location.reload()">v56</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -78,6 +78,8 @@
         <button class="nav-btn" style="background:#7c3aed" onclick="toggleDbgPanel()">🐞</button>
     </div>
 </header>
+
+<div id="toast" style="display:none; position:fixed; bottom:75px; left:10px; right:10px; background:#16a34a; color:white; padding:12px 16px; border-radius:10px; font-size:13px; z-index:5000; box-shadow:0 2px 10px rgba(0,0,0,0.35); line-height:1.4;"></div>
 
 <div id="dbgPanel" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:4000; flex-direction:column; padding:15px;">
     <h3 style="color:white; margin:0 0 10px 0; font-size:14px;">Jurnal de depanare</h3>
@@ -124,17 +126,31 @@
 
     // Wrapper peste toate apelurile catre Google: daca sesiunea a expirat (401), explica clar userului ce sa faca
     var lastAuthAlertTs = 0;
-    async function gcalFetch(url, options) {
+    // v56: parametrul 'silent' - true pt. reimprospatari pasive (syncGoogle la navigare/deschidere), care nu mai arata alerta la 401,
+    // doar logheaza. Actiunile active (adaugare/editare/stergere/bifare) raman cu alerta, ca sa stii mereu daca ce ai facut a esuat.
+    async function gcalFetch(url, options, silent) {
         var r = await fetch(url, options);
         if (r.status === 401) {
-            logDbg('gcalFetch: 401 — sesiunea Google a expirat, la '+url.split('?')[0]);
-            var now = Date.now();
-            if (now - lastAuthAlertTs > 5000) {
-                lastAuthAlertTs = now;
-                alert('Sesiunea Google a expirat.\n\nToken-ul de acces e valabil doar aproximativ 1 oră — e normal să expire din când în când, nu ai pierdut nimic din datele tale.\n\nApasă butonul SYNC din antet ca să te reconectezi, apoi încearcă din nou.');
+            logDbg('gcalFetch: 401 — sesiunea Google a expirat, la '+url.split('?')[0]+(silent?' (silențios - refresh pasiv)':''));
+            if (!silent) {
+                var now = Date.now();
+                if (now - lastAuthAlertTs > 5000) {
+                    lastAuthAlertTs = now;
+                    alert('Sesiunea Google a expirat.\n\nToken-ul de acces e valabil doar aproximativ 1 oră — e normal să expire din când în când, nu ai pierdut nimic din datele tale.\n\nApasă butonul SYNC din antet ca să te reconectezi, apoi încearcă din nou.');
+                }
             }
         }
         return r;
+    }
+
+    var toastTimer = null;
+    // Mes1: mesaj vizibil pe ecran, dupa fiecare creare, care explica ce s-a inteles din comanda
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.display = 'block';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 6000);
     }
 
     function logDbg(msg) {
@@ -161,8 +177,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || localStorage.getItem('trident_db_v53') || localStorage.getItem('trident_db_v52') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || localStorage.getItem('trident_j_v53') || localStorage.getItem('trident_j_v52') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || localStorage.getItem('trident_db_v53') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || localStorage.getItem('trident_j_v53') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -197,12 +213,12 @@
         logDbg('syncGoogle: pornit, interval '+start+' → '+end);
         try {
             // PAS 1: aparitiile (instances) lunii curente + luna precedenta (pentru restante) - pentru afisare pe zile
-            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } });
+            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=true&orderBy=startTime", { headers: { Authorization: "Bearer " + token } }, true);
             var d = await r.json();
             logDbg('syncGoogle: raspuns HTTP '+r.status+', '+(d.items?d.items.length:0)+' instante primite'+(d.error?(' — EROARE API: '+JSON.stringify(d.error)):''));
             if (d.items) {
                 // PAS 2: evenimentele "master" (recurente) - singurul loc unde exista campul recurrence/RRULE real
-                var rM = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=false", { headers: { Authorization: "Bearer " + token } });
+                var rM = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin="+start+"&timeMax="+end+"&singleEvents=false", { headers: { Authorization: "Bearer " + token } }, true);
                 var dM = await rM.json();
                 var rruleMap = {};
                 (dM.items || []).forEach(function(me) { if (me.recurrence) rruleMap[me.id] = me.recurrence[0]; });
@@ -472,7 +488,8 @@
         val = preprocessShortcuts(val, curY, curM);
 
         // "U[n]" + cod zi = a n-a zi urmatoare de <zi>, numarand de la azi (n implicit 1 = "urmatoarea")
-        var mNextU = val.match(/^U(\d*)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        // Daca exista cifra ordinala explicita, nu mai cerem granita dupa cod (semnalul "3L" e clar, risc minim de coliziune cu text real)
+        var mNextU = val.match(/^U(\d+)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)(.*)$/i) || val.match(/^U()(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
         if (mNextU) {
             var ordU = mNextU[1] ? parseInt(mNextU[1]) : 1;
             var codeU = mNextU[2].toUpperCase(), dowU = WEEKDAY_CODE_MAP[codeU], ndU = nthWeekday(dowU, ordU);
@@ -481,7 +498,8 @@
         }
 
         // "N[n]" + cod zi = AMBIGUU (poate fi si o nota al carei text incepe chiar cu acel cod) -> cerem confirmare, nu ghicim
-        var mAmbigN = val.match(/^N(\d*)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        // Cu cifra ordinala explicita ("N3L..."), nu mai cerem granita - altfel ambiguitatea nici nu se mai detecteaza cand e lipit de text
+        var mAmbigN = val.match(/^N(\d+)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)(.*)$/i) || val.match(/^N()(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
         if (mAmbigN) {
             var ordN = mAmbigN[1] ? parseInt(mAmbigN[1]) : 1;
             var codeN = mAmbigN[2].toUpperCase(), restN = mAmbigN[3], dowN = WEEKDAY_CODE_MAP[codeN];
@@ -520,6 +538,7 @@
             var durR = Math.round((dE - dS) / 86400000) + 1;
             if (hasTk) { addEventToGoogle(dS.getFullYear(), dS.getMonth(), dS.getDate(), durR, txR); logDbg('→ interval relativ → trimis spre Google.'); }
             else { localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false }); saveAll(); logDbg('→ interval relativ → LOCAL (offline).'); }
+            showToast('✓ Interval creat: '+dS.toLocaleDateString('ro-RO')+' → '+dE.toLocaleDateString('ro-RO')+' ('+durR+' zile)\n"'+txR+'"');
             if (remInfo) createReminder(dS, remInfo, txR);
             viewDate = new Date(dS.getFullYear(), dS.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -530,6 +549,7 @@
             var dR = relDate(today0, nR, uR);
             if (hasTk) { addEventToGoogle(dR.getFullYear(), dR.getMonth(), dR.getDate(), 1, txR2); logDbg('→ dată relativă → trimisă spre Google.'); }
             else { localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false }); saveAll(); logDbg('→ dată relativă → LOCAL (offline).'); }
+            showToast('✓ Eveniment creat pe '+dR.toLocaleDateString('ro-RO')+'\n"'+txR2+'"');
             if (remInfo) createReminder(dR, remInfo, txR2);
             viewDate = new Date(dR.getFullYear(), dR.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -545,6 +565,7 @@
             var durCross = Math.round((dtE - dtS) / 86400000) + 1;
             if (hasTk) { addEventToGoogle(dtS.getFullYear(), dtS.getMonth(), dtS.getDate(), durCross, txCross); logDbg('→ interval între luni → trimis spre Google, '+durCross+' zile.'); }
             else { localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false }); saveAll(); renderCalendar(); logDbg('→ interval între luni → LOCAL (offline), '+durCross+' zile.'); }
+            showToast('✓ Interval creat: '+dtS.toLocaleDateString('ro-RO')+' → '+dtE.toLocaleDateString('ro-RO')+' ('+durCross+' zile)\n"'+txCross+'"');
             if (remInfo) createReminder(dtS, remInfo, txCross);
             inp.value = ""; return;
         }
@@ -559,6 +580,7 @@
             var durRange = dEnd - dStart + 1;
             if (hasTk) { addEventToGoogle(curY, curM, dStart, durRange, txRange); logDbg('→ interval în aceeași lună → trimis spre Google, '+durRange+' zile.'); }
             else { localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false }); saveAll(); renderCalendar(); logDbg('→ interval în aceeași lună → LOCAL (offline), '+durRange+' zile.'); }
+            showToast('✓ Interval creat: '+dStart+'-'+dEnd+'.'+(curM+1)+' ('+durRange+' zile)\n"'+txRange+'"');
             if (remInfo) createReminder(new Date(curY, curM, dStart), remInfo, txRange);
             inp.value = ""; return;
         }
@@ -573,8 +595,8 @@
             var colI = parseInt(mDel[3]), rowI = parseInt(mDel[4]);
             var type = colI === 1 ? 'm' : colI === 2 ? 'c' : 'a';
             var evs = localDB.concat(googleEvents).filter(function(e){ return e.d === d && e.t === type && e.m === delM && e.y === delY; });
-            if(evs[rowI-1]) { delEv(evs[rowI-1].id, !!evs[rowI-1].isG); logDbg('→ Recunoscut ca: ștergere. Găsit și șters: "'+evs[rowI-1].n+'"'); }
-            else logDbg('→ Recunoscut ca: ștergere, dar NU am găsit niciun eveniment pe ziua '+d+'.'+(delM+1)+', coloana '+colI+', rândul '+rowI+'.');
+            if(evs[rowI-1]) { delEv(evs[rowI-1].id, !!evs[rowI-1].isG); logDbg('→ Recunoscut ca: ștergere. Găsit și șters: "'+evs[rowI-1].n+'"'); showToast('✓ Șters: "'+evs[rowI-1].n+'"'); }
+            else { logDbg('→ Recunoscut ca: ștergere, dar NU am găsit niciun eveniment pe ziua '+d+'.'+(delM+1)+', coloana '+colI+', rândul '+rowI+'.'); showToast('✗ Ștergere: nu am găsit niciun eveniment pe ziua '+d+'.'+(delM+1)+', coloana '+colI+', rândul '+rowI+'.'); }
             inp.value = ""; return;
         }
 
@@ -590,6 +612,7 @@
             var existGid = journalData[noteKey] && journalData[noteKey].gid;
             if (hasTk) { upsertNoteGoogle(noteY, noteM, noteD, noteText, existGid); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
             else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); }
+            showToast('✓ Notă pe '+noteD+'.'+(noteM+1)+'\n"'+noteText+'"');
             inp.value = ""; return;
         }
 
@@ -618,7 +641,9 @@
             if (letter) {
                 // D1: R accepta acum si literele englezesti W/M/Y ca aliasuri pt S/L/A (Weekly/Monthly/Yearly)
                 var freqMap = { L: 'MONTHLY', M: 'MONTHLY', S: 'WEEKLY', W: 'WEEKLY', A: 'YEARLY', Y: 'YEARLY', Z: 'DAILY', D: 'DAILY' };
+                var freqLabelMap = { DAILY: 'zi', WEEKLY: 'săptămână', MONTHLY: 'lună', YEARLY: 'an' };
                 var freq = freqMap[letter];
+                var freqTxt = 'la fiecare '+(interval>1?(interval+' '):'')+freqLabelMap[freq]+(interval>1?'e':'')+', start '+day+'.'+(evM+1)+'.'+evY;
                 if (hasTk) {
                     addRecurringToGoogle(day, evM, evY, name, freq, interval);
                     logDbg('→ Recunoscut ca: recurență REALĂ trimisă spre Google ('+freq+', interval '+interval+'), start '+day+'.'+(evM+1)+'.'+evY+'.');
@@ -627,10 +652,12 @@
                     saveAll(); renderCalendar();
                     logDbg('→ Recunoscut ca: recurență LOCALĂ (offline, fără token Google), '+freq+'.');
                 }
+                showToast('✓ Recurență creată: '+freqTxt+'\n"'+name+'"'+(hasTk?'':' (local, offline)'));
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             } else {
                 if (hasTk) { addEventToGoogle(evY, evM, day, 1, name); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
                 else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
+                showToast('✓ Eveniment creat pe '+day+'.'+(evM+1)+'.'+evY+'\n"'+name+'"'+(hasTk?'':' (local, offline)'));
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             }
             inp.value = "";
@@ -719,6 +746,7 @@
             if (hasTk2) upsertNoteGoogle(p.y, p.m, p.d, p.noteText, existGid2);
             else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); }
             logDbg('Ambiguitate rezolvată de utilizator: NOTĂ — "'+p.noteText+'"');
+            showToast('✓ Notă (ai ales "notă")\n"'+p.noteText+'"');
         } else {
             document.getElementById('cmdInput').value = p.nextDateStr + p.restTxt;
             logDbg('Ambiguitate rezolvată de utilizator: ziua următoare ('+p.nextDateStr+')');
@@ -737,7 +765,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v55', JSON.stringify(localDB)); localStorage.setItem('trident_j_v55', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v56', JSON.stringify(localDB)); localStorage.setItem('trident_j_v56', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
