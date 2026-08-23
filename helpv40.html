@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghid de Utilizare - Trident Calendar v40</title>
+    <style>
+        :root {
+            --primary: #1e293b; --accent: #2563EB; --text: #334155; --bg: #f8fafc;
+            --blue: #e0f2fe; --yellow: #ffff00; --pink: #fff1f2; --green: #dcfce7;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: var(--text); background: var(--bg); margin: 0; padding: 0; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .version { font-size: 14px; opacity: 0.8; margin-top: 5px; display: block; }
+
+        nav { background: white; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; justify-content: center; gap: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        nav a { color: var(--accent); text-decoration: none; font-weight: bold; font-size: 14px; }
+
+        section { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        h3 { color: var(--accent); margin-top: 20px; }
+
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        code { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+
+        .color-box { display: inline-block; width: 15px; height: 15px; border-radius: 3px; margin-right: 5px; vertical-align: middle; border: 1px solid #ccc; }
+        .update-badge { background: #f59e0b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 900; vertical-align: middle; }
+
+        footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Ghid de Utilizare Trident Calendar</h1>
+    <span class="version">Versiunea v40 - Ghid Combinat (help.html + help59.html)</span>
+</header>
+
+<div class="container">
+    <nav>
+        <a href="#structura">STRUCTURĂ &amp; CULORI</a>
+        <a href="#comenzi">COMENZI</a>
+        <a href="#jurnal">JURNAL</a>
+    </nav>
+
+    <section id="structura">
+        <h2>1. Structură și Culori</h2>
+        <p>Trident Calendar este o aplicație însoțitoare (companion) pentru Google Calendar, optimizată pentru vizualizarea pe 3 coloane tematice.</p>
+        <ul>
+            <li><strong>Coloanele fixe (Stânga):</strong> <code>Nr</code> (Numărul zilei) și <code>Zi</code> (Numele zilei săptămânii).</li>
+            <li><strong>Coloana LUNARE:</strong> Evenimente care se repetă în fiecare lună (Facturi, Chirii etc.).</li>
+            <li><strong>Coloana CURENTE:</strong> Sarcini punctuale, săptămânale și secțiunea de Jurnal.</li>
+            <li><strong>Coloana ANUALE:</strong> Zile de naștere, nunți, sărbători religioase.</li>
+        </ul>
+        <h3>Coduri de culoare <span class="update-badge">v59</span></h3>
+        <ul>
+            <li><span class="color-box" style="background: var(--blue)"></span> <strong>Weekend:</strong> Toată linia devine albastru pal.</li>
+            <li><span class="color-box" style="background: var(--yellow)"></span> <strong>Azi:</strong> Toată linia (inclusiv Nr/Zi) devine galben intens.</li>
+            <li><span class="color-box" style="background: var(--pink)"></span> <strong>Sarcini:</strong> Roz (nebifat/urgent) → Verde (finalizat).</li>
+            <li><strong>Intervale:</strong> Prima zi marcată cu <code>(1:N)</code>, ultima zi marcată cu <strong>FINAL</strong>.</li>
+        </ul>
+    </section>
+
+    <section id="comenzi">
+        <h2>2. Interacțiuni și Comenzi</h2>
+        <ul>
+            <li><strong>Butonul [Z] (Zoom):</strong> Schimbă între modurile <em>Normal, Compact și Mini</em>.</li>
+            <li><strong>Butonul ECO:</strong> Ascunde zilele trecute fără restanțe, până la prima zi care necesită atenție.</li>
+            <li><strong>Adăugare rapidă:</strong> Un click pe orice sarcină existentă deschide automat fereastra de adăugare pentru acea zi/coloană.</li>
+            <li><strong>Editare detalii [i]:</strong> Butonul rotund <code>i</code> de lângă o sarcină (sau lângă nota de jurnal) deschide notele lungi, fără să ocupe tot ecranul. Dacă e galben, conține deja text.</li>
+        </ul>
+        <h3>Consola compactă (bara de jos)</h3>
+        <p>Poți introduce comenzi fără spații pentru viteză maximă:</p>
+        <ul>
+            <li><code>15 Pizza</code> — adaugă "Pizza" pe data de 15, coloana CURENTE.</li>
+            <li><code>12D21</code> — șterge din ziua 12, coloana 2 (CURENTE), rândul 1.</li>
+            <li><code>20NNota</code> — adaugă o notă de jurnal pe data de 20.</li>
+            <li><code>15RLGaz</code> — adaugă "Gaz" ca eveniment <strong>lunar recurent real</strong> (nu doar etichetă), în coloana LUNARE, începând cu data de 15.</li>
+            <li><code>15RSPlata</code> / <code>15RAAniversare</code> — la fel, dar recurență săptămânală, respectiv anuală.</li>
+            <li><code>4R2LChirie</code> — recurență la fiecare 2 luni (interval opțional imediat după <code>R</code>).</li>
+        </ul>
+        <p><strong>Notă v41:</strong> dacă ești conectat prin SYNC, comenzile cu prefix <code>R</code> creează un eveniment recurent real direct în Google Calendar (RRULE), deci apare automat în toate lunile/anii viitori. Dacă lucrezi offline, se creează o recurență locală, expandată automat de aplicație pe lunile viitoare.</p>
+    </section>
+
+    <section id="jurnal">
+        <h2>3. Jurnalul Inteligent</h2>
+        <p>Notele de jurnal ocupă un singur rând subțire, cu prefix 📝, în josul coloanei CURENTE. Pentru a citi sau edita o notă lungă, apasă butonul rotund <code>[i]</code> de lângă notă — la fel ca la task-uri — fără să dai click pe tot rândul.</p>
+    </section>
+</div>
+
+<footer>
+    Proiect Trident Calendar &copy; 2026. Ghid de utilizare combinat pentru v40.
+</footer>
+
+</body>
+</html>

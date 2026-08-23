@@ -1,4 +1,4 @@
-var CACHE = 'trident-cache-v54';
+var CACHE = 'trident-cache-v55';
 var FILES = [
   './',
   './index.html',
@@ -38,7 +38,7 @@ self.addEventListener('fetch', function(e) {
     caches.match(e.request).then(function(cached) {
       if (cached) return cached;
       return fetch(e.request).then(function(resp) {
-        // Punem în cache doar fișierele proprii valid
+        // Punem în cache doar fișierele proprii valide
         if (resp && resp.status === 200 && resp.type === 'basic') {
           var clone = resp.clone();
           caches.open(CACHE).then(function(cache) {

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Tehnic - Trident Calendar v40</title>
+    <style>
+        :root { --primary: #1e293b; --accent: #2563EB; --text: #334155; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: var(--text); background: var(--bg); margin: 0; padding: 0; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .version { font-size: 14px; opacity: 0.8; margin-top: 5px; display: block; }
+
+        nav { background: white; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        nav a { color: var(--accent); text-decoration: none; font-weight: bold; font-size: 14px; }
+
+        section { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        h3 { color: var(--accent); margin-top: 20px; }
+
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        code { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        pre { background: #0f172a; color: #e2e8f0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+        pre code { background: none; color: inherit; font-weight: normal; padding: 0; }
+
+        .tech-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .tech-table th, .tech-table td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .tech-table th { background: #f1f5f9; color: var(--primary); }
+        .update-badge { background: #f59e0b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 900; vertical-align: middle; }
+        .warn { background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 15px; border-radius: 6px; }
+
+        footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Manual Tehnic Trident Calendar</h1>
+    <span class="version">v40 - Documentație combinată + Algoritm de citire RRULE</span>
+</header>
+
+<div class="container">
+    <nav>
+        <a href="#arhitectura">ARHITECTURĂ</a>
+        <a href="#es5">COMPATIBILITATE</a>
+        <a href="#sortare">IERARHIA DE SORTARE</a>
+        <a href="#rrule">CITIREA RECURENȚEI (RRULE)</a>
+    </nav>
+
+    <section id="arhitectura">
+        <h2>1. Arhitectură</h2>
+        <table class="tech-table">
+            <tr><th>Componentă</th><th>Tehnologie / Logică</th></tr>
+            <tr><td>Platformă</td><td>PWA (Progressive Web App)</td></tr>
+            <tr><td>Frontend</td><td>HTML5 / CSS3 (CSS Grid &amp; Flexbox)</td></tr>
+            <tr><td>Backend/Script</td><td>JavaScript ES5 (ultra-compatibil pentru tablete vechi)</td></tr>
+            <tr><td>Sincronizare</td><td>Google Calendar API v3 (OAuth 2.0 Implicit Flow)</td></tr>
+            <tr><td>Persistență</td><td>LocalStorage cu prefixare pe versiune (ex: <code>trident_db_v40</code>)</td></tr>
+        </table>
+
+        <h3>Sincronizarea Duală Google API <span class="update-badge">v59</span></h3>
+        <table class="tech-table">
+            <tr><th>Pas</th><th>Acțiune</th></tr>
+            <tr><td>1. Instances</td><td>Descarcă aparițiile individuale (<code>singleEvents=true</code>) pentru a popula zilele lunii afișate.</td></tr>
+            <tr><td>2. Masters</td><td>Descarcă evenimentele "părinte" (<code>singleEvents=false</code>) pentru a citi regula reală <code>RRULE</code> a recurenței.</td></tr>
+            <tr><td>3. State</td><td>Verifică prezența sufixului <code>[OK]</code> în titlu pentru sincronizarea stării "Bifat" între dispozitive.</td></tr>
+        </table>
+    </section>
+
+    <section id="es5">
+        <h2>2. Compatibilitate Android</h2>
+        <p>Pentru a preveni "Ecranul Alb", codul este scris în <strong>JavaScript ES5</strong>: fără <code>let</code>/<code>const</code> în interiorul blocurilor, fără arrow functions problematice, fără spread operators. Toate buclele critice folosesc <code>for</code> clasic.</p>
+        <h3>Sistemul de Trace (Cutia Neagră)</h3>
+        <p>Butonul roșu <strong>[TRACE]</strong> (unde e prezent) rulează independent de restul aplicației și înregistrează pașii de pornire și erorile, permițând copierea log-ului chiar dacă interfața principală e blocată.</p>
+    </section>
+
+    <section id="sortare">
+        <h2>3. Ierarhia de Sortare (getCategory)</h2>
+        <p>Aplicația decide coloana unui eveniment în această ordine strictă:</p>
+        <ol>
+            <li><strong>Prefixe manuale de recurență:</strong> <code>RL / R[n]L</code> → LUNARE, <code>RS / R[n]S</code> → CURENTE, <code>RA / R[n]A</code> → ANUALE. <code>n</code> este intervalul opțional (ex. <code>R2L</code> = la fiecare 2 luni).</li>
+            <li><strong>Cuvinte cheie:</strong> <em>"Sfânt", "Ortodox", "Catolic", "Nuntă", "Cununie", "Botez", "Adormirea", "Ziua"</em> → ANUALE, indiferent de alți factori.</li>
+            <li><strong>Analiză RRULE reală</strong> (vezi secțiunea 4): dacă niciun prefix/cuvânt cheie nu se potrivește, se citește regula de recurență efectivă a evenimentului Google — <code>MONTHLY</code> → LUNARE, <code>YEARLY</code> → ANUALE.</li>
+            <li><strong>Implicit:</strong> dacă nimic nu se potrivește → CURENTE.</li>
+        </ol>
+        <div class="warn">
+            <strong>Eroare corectată în v41:</strong> anterior, câmpul <code>recurrence</code> era citit direct de pe aparițiile individuale (<code>singleEvents=true</code>), care <strong>nu conțin niciodată</strong> acest câmp — doar evenimentul-părinte îl are. Rezultatul era că pasul 3 (Analiză RRULE) nu funcționa niciodată, iar aplicația cădea mereu pe eticheta text (pas 1/2) sau pe implicit CURENTE. Vezi secțiunea 4 pentru soluție.
+        </div>
+    </section>
+
+    <section id="rrule">
+        <h2>4. Cum se citește corect frecvența de repetare (RRULE)</h2>
+        <p>Google Calendar nu stochează recurența ca text ("lunar", "săptămânal") ci ca regulă standardizată <strong>RFC 5545 (iCalendar)</strong>, numită <code>RRULE</code>. Ca să deduci frecvența reală a unui eveniment, NU se ghicește din text — se parsează acest string.</p>
+
+        <h3>4.1 De unde vine informația</h3>
+        <p>Un eveniment recurent are un evenment "master" (părinte) care conține un array <code>recurrence</code>:</p>
+        <pre><code>"recurrence": [
+  "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;COUNT=10"
+]</code></pre>
+        <p>Instanțele individuale (obținute cu <code>singleEvents=true</code>, cum face Trident pentru afișarea pe zile) <strong>nu au</strong> acest câmp. În schimb au <code>recurringEventId</code>, care indică ID-ul evenimentului părinte. De aceea sincronizarea trebuie să fie <strong>duală</strong>: o dată pentru instanțe (afișare), o dată pentru masters (citire RRULE) — vezi tabelul din secțiunea 1.</p>
+
+        <h3>4.2 Câmpurile relevante din RRULE</h3>
+        <ul>
+            <li><code>FREQ</code> — unitatea de bază: <code>DAILY</code>, <code>WEEKLY</code>, <code>MONTHLY</code>, <code>YEARLY</code>.</li>
+            <li><code>INTERVAL</code> — "la fiecare N unități" (implicit 1 dacă lipsește). Ex: <code>FREQ=MONTHLY;INTERVAL=2</code> = la fiecare 2 luni.</li>
+            <li><code>BYDAY</code>, <code>BYMONTHDAY</code> — rafinează în cadrul unității (ex. lu/mi din fiecare a doua săptămână).</li>
+            <li><code>COUNT</code> / <code>UNTIL</code> — marchează finalul seriei; dacă lipsesc ambele, recurența e infinită.</li>
+        </ul>
+
+        <h3>4.3 Parsare (JavaScript, fără librării externe)</h3>
+        <pre><code>function parseRecurrence(recurrenceArray) {
+  var rruleLine = recurrenceArray.filter(function(r){
+    return r.indexOf('RRULE:') === 0;
+  })[0];
+  if (!rruleLine) return null;
+
+  var params = new URLSearchParams(rruleLine.replace('RRULE:', '').replace(/;/g, '&'));
+  return {
+    freq: params.get('FREQ'),               // DAILY / WEEKLY / MONTHLY / YEARLY
+    interval: parseInt(params.get('INTERVAL') || '1'),
+    byDay: params.get('BYDAY') ? params.get('BYDAY').split(',') : null,
+    count: params.get('COUNT'),
+    until: params.get('UNTIL')
+  };
+}</code></pre>
+
+        <h3>4.4 Aplicat în Trident (v41)</h3>
+        <p>Funcția <code>syncGoogle()</code> face acum doi pași: descarcă instanțele lunii (pentru grilă) și, separat, evenimentele master din același interval (pentru RRULE). Construiește o hartă <code>id_master → RRULE</code>, iar pentru fiecare instanță afișată caută RRULE-ul real fie pe eveniment (dacă e el însuși master), fie prin <code>recurringEventId</code> în hartă. Rezultatul e pasat lui <code>getCategory()</code>, care aplică <code>MONTHLY→LUNARE</code> / <code>YEARLY→ANUALE</code> corect, ca ultim nivel din ierarhie.</p>
+
+        <h3>4.5 Creare de recurență reală (nu doar etichetă)</h3>
+        <p>Comenzile cu prefix <code>R</code> (ex. <code>15RLGaz</code>) nu mai creează doar o intrare locală pentru luna curentă cu eticheta de coloană forțată — creează un eveniment cu <code>recurrence: ["RRULE:FREQ=...;INTERVAL=..."]</code> trimis direct către Google Calendar (dacă există sesiune activă), astfel încât apare automat, prin sincronizare normală, în toate lunile/săptămânile/anii viitoare. Offline, se folosește o recurență locală echivalentă, expandată de aplicație la randare.</p>
+    </section>
+</div>
+
+<footer>
+    Proiect Trident Calendar &copy; 2026. Manual tehnic combinat, v40.
+</footer>
+
+</body>
+</html>

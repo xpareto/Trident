@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v54) -->
+<!-- START OF FILE: index.html (Trident v55) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v54</title>
+    <title>Trident v55</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v54</div>
+    <div class="v-badge" onclick="location.reload()">v55</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -117,7 +117,9 @@
 
 <script>
     var GCAL_CLIENT_ID = '705792153280-6u766blorfafm3taeonfcufbihggd3ee.apps.googleusercontent.com';
-    var GCAL_REDIRECT = window.location.origin + window.location.pathname;
+    // v55: adresa FIXA, nu mai calculata din window.location - elimina mismatch-ul intre lansare din browser vs. din aplicatia instalata (PWA)
+    // Trebuie sa fie EXACT una dintre variantele inregistrate in Google Cloud Console (Authorized redirect URIs)
+    var GCAL_REDIRECT = 'https://xpareto.github.io/Trident/';
     var viewDate = new Date(), localDB = [], journalData = {}, googleEvents = [], ecoMode = false, zoomLevel = 0, editRef = null, activeDescRef = null, debugLog = [], pendingAmbig = null;
 
     // Wrapper peste toate apelurile catre Google: daca sesiunea a expirat (401), explica clar userului ce sa faca
@@ -159,8 +161,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v54') || localStorage.getItem('trident_db_v53') || localStorage.getItem('trident_db_v52') || localStorage.getItem('trident_db_v51') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v54') || localStorage.getItem('trident_j_v53') || localStorage.getItem('trident_j_v52') || localStorage.getItem('trident_j_v51') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || localStorage.getItem('trident_db_v53') || localStorage.getItem('trident_db_v52') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || localStorage.getItem('trident_j_v53') || localStorage.getItem('trident_j_v52') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -263,6 +265,12 @@
         d.setDate(d.getDate() + diff);
         return d;
     }
+    // A N-a aparitie a unei zile din saptamana, numarand de la azi (n=1 e prima urmatoare = nextWeekday, n=2 e cea de dupa etc.)
+    function nthWeekday(targetDow, n) {
+        var d = nextWeekday(targetDow);
+        d.setDate(d.getDate() + (n - 1) * 7);
+        return d;
+    }
 
     // Prescurtari stil taskwarrior: som/eom (inceput/sfarsit de luna), sow/eow (saptamana, sow=luni), soy/eoy (an)
     // B (begin) e alias pentru S (start) - bom=som, bow=sow, boy=soy - ambele acceptate
@@ -355,6 +363,10 @@
             var diffD = Math.round((curDt - base) / 86400000);
             if (diffD < 0 || diffD % 7 !== 0) return false;
             return (diffD / 7) % interval === 0;
+        }
+        if (ev.rec.freq === 'DAILY') {
+            var diffDz = Math.round((curDt - base) / 86400000);
+            return diffDz >= 0 && diffDz % interval === 0;
         }
         return false;
     }
@@ -459,32 +471,35 @@
 
         val = preprocessShortcuts(val, curY, curM);
 
-        // "U" + cod zi = ziua urmatoare de <zi> (fara ambiguitate cu nimic, se transforma direct in zi.luna si continua normal)
-        var mNextU = val.match(/^U(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        // "U[n]" + cod zi = a n-a zi urmatoare de <zi>, numarand de la azi (n implicit 1 = "urmatoarea")
+        var mNextU = val.match(/^U(\d*)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
         if (mNextU) {
-            var codeU = mNextU[1].toUpperCase(), dowU = WEEKDAY_CODE_MAP[codeU], ndU = nextWeekday(dowU);
-            logDbg('→ "U'+codeU+'" = ziua următoare de '+WEEKDAY_NAMES_RO[dowU]+' ('+ndU.toLocaleDateString('ro-RO')+').');
-            val = ndU.getDate() + '.' + (ndU.getMonth() + 1) + mNextU[2];
+            var ordU = mNextU[1] ? parseInt(mNextU[1]) : 1;
+            var codeU = mNextU[2].toUpperCase(), dowU = WEEKDAY_CODE_MAP[codeU], ndU = nthWeekday(dowU, ordU);
+            logDbg('→ "U'+(mNextU[1]||'')+codeU+'" = a '+ordU+'-a zi de '+WEEKDAY_NAMES_RO[dowU]+' de la azi ('+ndU.toLocaleDateString('ro-RO')+').');
+            val = ndU.getDate() + '.' + (ndU.getMonth() + 1) + mNextU[3];
         }
 
-        // "N" + cod zi = AMBIGUU (poate fi si o nota al carei text incepe chiar cu acel cod) -> cerem confirmare, nu ghicim
-        var mAmbigN = val.match(/^N(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
+        // "N[n]" + cod zi = AMBIGUU (poate fi si o nota al carei text incepe chiar cu acel cod) -> cerem confirmare, nu ghicim
+        var mAmbigN = val.match(/^N(\d*)(MA|MO|TU|WE|TH|FR|SA|SU|L|M|J|V|S|D)\b(.*)$/i);
         if (mAmbigN) {
-            var codeN = mAmbigN[1].toUpperCase(), restN = mAmbigN[2], dowN = WEEKDAY_CODE_MAP[codeN];
+            var ordN = mAmbigN[1] ? parseInt(mAmbigN[1]) : 1;
+            var codeN = mAmbigN[2].toUpperCase(), restN = mAmbigN[3], dowN = WEEKDAY_CODE_MAP[codeN];
             var todayA = new Date();
-            var noteTextC = (codeN.toLowerCase() + restN).replace(/^\s+/, '');
+            var noteTextC = ((mAmbigN[1]||'') + codeN.toLowerCase() + restN).replace(/^\s+/, '');
             var noteKeyC = todayA.getFullYear() + '-' + todayA.getMonth() + '-' + todayA.getDate();
-            var ndC = nextWeekday(dowN);
+            var ndC = nthWeekday(dowN, ordN);
             pendingAmbig = {
                 y: todayA.getFullYear(), m: todayA.getMonth(), d: todayA.getDate(),
                 noteText: noteTextC, noteKey: noteKeyC,
                 nextDateStr: ndC.getDate() + '.' + (ndC.getMonth() + 1), restTxt: restN
             };
-            logDbg('→ AMBIGUU: "'+val+'" — poate fi notă sau "ziua următoare de '+WEEKDAY_NAMES_RO[dowN]+'". Cer confirmare.');
+            logDbg('→ AMBIGUU: "'+val+'" — poate fi notă sau "a '+ordN+'-a zi de '+WEEKDAY_NAMES_RO[dowN]+' de la azi". Cer confirmare.');
             var eventTextC = restN.trim() || '(fără text)';
+            var ordLabel = ordN === 1 ? 'în următoarea' : ('în a ' + ordN + '-a');
             showAmbig(
                 'NOTĂ cu textul: "' + noteTextC + '"',
-                'EVENIMENT cu textul: "' + eventTextC + '", în următoarea ' + WEEKDAY_NAMES_RO[dowN] + ' (' + ndC.toLocaleDateString('ro-RO') + ')'
+                'EVENIMENT cu textul: "' + eventTextC + '", ' + ordLabel + ' ' + WEEKDAY_NAMES_RO[dowN] + ' (' + ndC.toLocaleDateString('ro-RO') + ')'
             );
             inp.value = ""; return;
         }
@@ -582,7 +597,7 @@
         // D2: fara zi, se considera azi (ex: "Cumparaturi" -> azi, coloana CURENTE)
         // v54: intre zi si recurenta se poate insera optional un offset "+N[z/s/l]" (ex: 17+2sR9S text)
         // Spatiile intre segmente (zi / offset / recurenta) sunt acum optionale peste tot, nu doar inainte de text
-        var mEv = val.match(/^(?:(\d{1,2})(?:\.(\d{1,2}))?)?\s*(\+(\d+)([zsl])?)?\s*(R(\d*)([SLAWMY]))?\s*(.*)/i);
+        var mEv = val.match(/^(?:(\d{1,2})(?:\.(\d{1,2}))?)?\s*(\+(\d+)([zsl])?)?\s*(R(\d*)([SLAWMYZD]))?\s*(.*)/i);
         if(mEv) {
             var todayE1 = new Date();
             var day = mEv[1] ? parseInt(mEv[1]) : todayE1.getDate();
@@ -602,7 +617,7 @@
 
             if (letter) {
                 // D1: R accepta acum si literele englezesti W/M/Y ca aliasuri pt S/L/A (Weekly/Monthly/Yearly)
-                var freqMap = { L: 'MONTHLY', M: 'MONTHLY', S: 'WEEKLY', W: 'WEEKLY', A: 'YEARLY', Y: 'YEARLY' };
+                var freqMap = { L: 'MONTHLY', M: 'MONTHLY', S: 'WEEKLY', W: 'WEEKLY', A: 'YEARLY', Y: 'YEARLY', Z: 'DAILY', D: 'DAILY' };
                 var freq = freqMap[letter];
                 if (hasTk) {
                     addRecurringToGoogle(day, evM, evY, name, freq, interval);
@@ -722,7 +737,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v54', JSON.stringify(localDB)); localStorage.setItem('trident_j_v54', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v55', JSON.stringify(localDB)); localStorage.setItem('trident_j_v55', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
