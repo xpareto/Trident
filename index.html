@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v56) -->
+<!-- START OF FILE: index.html (Trident v57) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v56</title>
+    <title>Trident v57</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v56</div>
+    <div class="v-badge" onclick="location.reload()">v57</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -177,8 +177,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || localStorage.getItem('trident_db_v53') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || localStorage.getItem('trident_j_v53') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             ecoMode = localStorage.getItem('trident_eco') === 'true';
@@ -339,7 +339,7 @@
     // REM n AT h[:m] - sufix optional la orice comanda de adaugare. n zile inainte, la ora h:m (sau aleator din sloturi daca lipseste ora)
     var REM_SLOTS = [[9,30],[10,0],[10,30],[11,0],[11,30],[12,0],[12,30],[13,0]];
     function extractRem(text) {
-        var m = text.match(/\s*REM(\d*)(?:AT(\d{1,2})(?::(\d{2}))?)?\s*$/i);
+        var m = text.match(/\s*REM(\d*)(?:\s*AT\s*(\d{1,2})(?:[:.]?(\d{2}))?)?\s*$/i);
         if (!m) return { text: text, rem: null };
         var n = m[1] ? parseInt(m[1]) : 0;
         var h, mi;
@@ -355,7 +355,9 @@
         var rd = new Date(startDate); rd.setDate(rd.getDate() - remInfo.n);
         var startDt = new Date(rd.getFullYear(), rd.getMonth(), rd.getDate(), remInfo.h, remInfo.mi);
         var endDt = new Date(startDt.getTime() + 30 * 60000);
-        var body = { summary: '⏰ ' + evText, start:{dateTime:startDt.toISOString()}, end:{dateTime:endDt.toISOString()} };
+        // reminders explicit (popup, 0 minute inainte) - fara asta, Google foloseste setarea implicita a calendarului
+        // (de multe ori 10-30 min inainte, sau deloc), deci NU garanta o notificare exact la ora ceruta
+        var body = { summary: '⏰ ' + evText, start:{dateTime:startDt.toISOString()}, end:{dateTime:endDt.toISOString()}, reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 0 }] } };
         var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
         logDbg('REM: creat reminder pt "'+evText+'" pe '+startDt.toString()+' — status='+r.status);
     }
@@ -765,7 +767,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v56', JSON.stringify(localDB)); localStorage.setItem('trident_j_v56', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v57', JSON.stringify(localDB)); localStorage.setItem('trident_j_v57', JSON.stringify(journalData)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
