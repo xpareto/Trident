@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v57) -->
+<!-- START OF FILE: index.html (Trident v58) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v57</title>
+    <title>Trident v58</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v57</div>
+    <div class="v-badge" onclick="location.reload()">v58</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -177,10 +177,12 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || localStorage.getItem('trident_db_v54') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || localStorage.getItem('trident_j_v54') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
+            // Local1: cache local al ultimelor evenimente Google aduse - afisate imediat, inainte sa se termine sincronizarea din fundal
+            try { googleEvents = JSON.parse(localStorage.getItem('trident_ge_cache') || '[]'); logDbg('initApp: '+googleEvents.length+' evenimente Google încărcate din cache local.'); } catch(eGe) { googleEvents = []; }
             ecoMode = localStorage.getItem('trident_eco') === 'true';
             zoomLevel = parseInt(localStorage.getItem('trident_zoom') || '0');
             applyZoom();
@@ -252,11 +254,13 @@
     }
 
     // Creeaza un eveniment REAL recurent direct in Google Calendar (RRULE), ca sa apara automat in toate lunile viitoare
-    async function addRecurringToGoogle(day, m, y, name, freq, interval) {
+    async function addRecurringToGoogle(day, m, y, name, freq, interval, toastMsg) {
         var tk = localStorage.getItem('gcal_token');
         var dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
         var body = { summary: name, start: { date: dateStr }, end: { date: dateStr }, recurrence: ['RRULE:FREQ=' + freq + ';INTERVAL=' + interval] };
-        await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: 'POST', headers: { Authorization: "Bearer " + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: 'POST', headers: { Authorization: "Bearer " + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        logDbg('addRecurringToGoogle: POST status='+resp.status+' pt "'+name+'"');
+        if (resp.status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ Recurență NU s-a trimis la Google: "'+name+'" (status '+resp.status+')'); }
         syncGoogle();
     }
 
@@ -538,9 +542,9 @@
             var dS = relDate(today0, n1, u1), dE = relDate(today0, n2, u2);
             if (dE < dS) { var tmp = dS; dS = dE; dE = tmp; }
             var durR = Math.round((dE - dS) / 86400000) + 1;
-            if (hasTk) { addEventToGoogle(dS.getFullYear(), dS.getMonth(), dS.getDate(), durR, txR); logDbg('→ interval relativ → trimis spre Google.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false }); saveAll(); logDbg('→ interval relativ → LOCAL (offline).'); }
-            showToast('✓ Interval creat: '+dS.toLocaleDateString('ro-RO')+' → '+dE.toLocaleDateString('ro-RO')+' ('+durR+' zile)\n"'+txR+'"');
+            var toastR = '✓ Interval creat: '+dS.toLocaleDateString('ro-RO')+' → '+dE.toLocaleDateString('ro-RO')+' ('+durR+' zile)\n"'+txR+'"';
+            if (hasTk) { addEventToGoogle(dS.getFullYear(), dS.getMonth(), dS.getDate(), durR, txR, toastR); logDbg('→ interval relativ → trimis spre Google.'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false }); saveAll(); logDbg('→ interval relativ → LOCAL (offline).'); showToast(toastR+' (local, offline)'); }
             if (remInfo) createReminder(dS, remInfo, txR);
             viewDate = new Date(dS.getFullYear(), dS.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -549,9 +553,9 @@
         if (mRel) {
             var nR = parseInt(mRel[1]), uR = mRel[2] || 'z', txR2 = mRel[3];
             var dR = relDate(today0, nR, uR);
-            if (hasTk) { addEventToGoogle(dR.getFullYear(), dR.getMonth(), dR.getDate(), 1, txR2); logDbg('→ dată relativă → trimisă spre Google.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false }); saveAll(); logDbg('→ dată relativă → LOCAL (offline).'); }
-            showToast('✓ Eveniment creat pe '+dR.toLocaleDateString('ro-RO')+'\n"'+txR2+'"');
+            var toastR2 = '✓ Eveniment creat pe '+dR.toLocaleDateString('ro-RO')+'\n"'+txR2+'"';
+            if (hasTk) { addEventToGoogle(dR.getFullYear(), dR.getMonth(), dR.getDate(), 1, txR2, toastR2); logDbg('→ dată relativă → trimisă spre Google.'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false }); saveAll(); logDbg('→ dată relativă → LOCAL (offline).'); showToast(toastR2+' (local, offline)'); }
             if (remInfo) createReminder(dR, remInfo, txR2);
             viewDate = new Date(dR.getFullYear(), dR.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -565,9 +569,9 @@
             var dtS = new Date(yS, m1, d1), dtE = new Date(yE, m2, d2);
             if (dtE < dtS) { var tmpDt = dtS; dtS = dtE; dtE = tmpDt; }
             var durCross = Math.round((dtE - dtS) / 86400000) + 1;
-            if (hasTk) { addEventToGoogle(dtS.getFullYear(), dtS.getMonth(), dtS.getDate(), durCross, txCross); logDbg('→ interval între luni → trimis spre Google, '+durCross+' zile.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false }); saveAll(); renderCalendar(); logDbg('→ interval între luni → LOCAL (offline), '+durCross+' zile.'); }
-            showToast('✓ Interval creat: '+dtS.toLocaleDateString('ro-RO')+' → '+dtE.toLocaleDateString('ro-RO')+' ('+durCross+' zile)\n"'+txCross+'"');
+            var toastCross = '✓ Interval creat: '+dtS.toLocaleDateString('ro-RO')+' → '+dtE.toLocaleDateString('ro-RO')+' ('+durCross+' zile)\n"'+txCross+'"';
+            if (hasTk) { addEventToGoogle(dtS.getFullYear(), dtS.getMonth(), dtS.getDate(), durCross, txCross, toastCross); logDbg('→ interval între luni → trimis spre Google, '+durCross+' zile.'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false }); saveAll(); renderCalendar(); logDbg('→ interval între luni → LOCAL (offline), '+durCross+' zile.'); showToast(toastCross+' (local, offline)'); }
             if (remInfo) createReminder(dtS, remInfo, txCross);
             inp.value = ""; return;
         }
@@ -580,9 +584,9 @@
             var dStart = mRange[1] ? parseInt(mRange[1]) : todayN.getDate(), dEnd = parseInt(mRange[2]), txRange = mRange[3] || '';
             if (dEnd < dStart) { var tmpD = dStart; dStart = dEnd; dEnd = tmpD; }
             var durRange = dEnd - dStart + 1;
-            if (hasTk) { addEventToGoogle(curY, curM, dStart, durRange, txRange); logDbg('→ interval în aceeași lună → trimis spre Google, '+durRange+' zile.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false }); saveAll(); renderCalendar(); logDbg('→ interval în aceeași lună → LOCAL (offline), '+durRange+' zile.'); }
-            showToast('✓ Interval creat: '+dStart+'-'+dEnd+'.'+(curM+1)+' ('+durRange+' zile)\n"'+txRange+'"');
+            var toastRange = '✓ Interval creat: '+dStart+'-'+dEnd+'.'+(curM+1)+' ('+durRange+' zile)\n"'+txRange+'"';
+            if (hasTk) { addEventToGoogle(curY, curM, dStart, durRange, txRange, toastRange); logDbg('→ interval în aceeași lună → trimis spre Google, '+durRange+' zile.'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false }); saveAll(); renderCalendar(); logDbg('→ interval în aceeași lună → LOCAL (offline), '+durRange+' zile.'); showToast(toastRange+' (local, offline)'); }
             if (remInfo) createReminder(new Date(curY, curM, dStart), remInfo, txRange);
             inp.value = ""; return;
         }
@@ -612,9 +616,9 @@
             var noteText = mNote[3];
             var noteKey = noteY+'-'+noteM+'-'+noteD;
             var existGid = journalData[noteKey] && journalData[noteKey].gid;
-            if (hasTk) { upsertNoteGoogle(noteY, noteM, noteD, noteText, existGid); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
-            else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); }
-            showToast('✓ Notă pe '+noteD+'.'+(noteM+1)+'\n"'+noteText+'"');
+            var toastNote = '✓ Notă pe '+noteD+'.'+(noteM+1)+'\n"'+noteText+'"';
+            if (hasTk) { upsertNoteGoogle(noteY, noteM, noteD, noteText, existGid, toastNote); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
+            else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); showToast(toastNote+' (local, offline)'); }
             inp.value = ""; return;
         }
 
@@ -646,20 +650,21 @@
                 var freqLabelMap = { DAILY: 'zi', WEEKLY: 'săptămână', MONTHLY: 'lună', YEARLY: 'an' };
                 var freq = freqMap[letter];
                 var freqTxt = 'la fiecare '+(interval>1?(interval+' '):'')+freqLabelMap[freq]+(interval>1?'e':'')+', start '+day+'.'+(evM+1)+'.'+evY;
+                var toastRec = '✓ Recurență creată: '+freqTxt+'\n"'+name+'"';
                 if (hasTk) {
-                    addRecurringToGoogle(day, evM, evY, name, freq, interval);
+                    addRecurringToGoogle(day, evM, evY, name, freq, interval, toastRec);
                     logDbg('→ Recunoscut ca: recurență REALĂ trimisă spre Google ('+freq+', interval '+interval+'), start '+day+'.'+(evM+1)+'.'+evY+'.');
                 } else {
                     localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false, rec:{freq:freq, interval:interval} });
                     saveAll(); renderCalendar();
                     logDbg('→ Recunoscut ca: recurență LOCALĂ (offline, fără token Google), '+freq+'.');
+                    showToast(toastRec+' (local, offline)');
                 }
-                showToast('✓ Recurență creată: '+freqTxt+'\n"'+name+'"'+(hasTk?'':' (local, offline)'));
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             } else {
-                if (hasTk) { addEventToGoogle(evY, evM, day, 1, name); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
-                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
-                showToast('✓ Eveniment creat pe '+day+'.'+(evM+1)+'.'+evY+'\n"'+name+'"'+(hasTk?'':' (local, offline)'));
+                var toastEv = '✓ Eveniment creat pe '+day+'.'+(evM+1)+'.'+evY+'\n"'+name+'"';
+                if (hasTk) { addEventToGoogle(evY, evM, day, 1, name, toastEv); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
+                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); showToast(toastEv+' (local, offline)'); }
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             }
             inp.value = "";
@@ -670,25 +675,30 @@
     }
 
     // Trimite un eveniment PUNCTUAL (nu recurent) direct in Google Calendar - baza sincronizarii bidirectionale
-    async function addEventToGoogle(y, m, d, dur, name) {
+    async function addEventToGoogle(y, m, d, dur, name, toastMsg) {
         var tk = localStorage.getItem('gcal_token');
         var body = { summary: name, start: { date: isoDate(y, m, d) }, end: { date: isoDate(y, m, d + dur) } };
         var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
         logDbg('addEventToGoogle: POST status='+resp.status+' pt "'+name+'"');
+        if (resp.status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ NU s-a trimis la Google: "'+name+'" (status '+resp.status+')'); }
         syncGoogle();
     }
 
     // Creeaza SAU actualizeaza o nota de jurnal ca eveniment Google cu prefix "📝 " (ca sa fie recunoscuta la citire ca nota, nu task)
-    async function upsertNoteGoogle(y, m, d, text, existingGid) {
+    async function upsertNoteGoogle(y, m, d, text, existingGid, toastMsg) {
         var tk = localStorage.getItem('gcal_token');
+        var status;
         if (existingGid) {
             var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+existingGid, { method:'PATCH', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify({ summary: '📝 '+text }) });
             logDbg('upsertNoteGoogle: PATCH status='+r.status);
+            status = r.status;
         } else {
             var body = { summary: '📝 '+text, start:{date:isoDate(y,m,d)}, end:{date:isoDate(y,m,d+1)} };
             var r2 = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
             logDbg('upsertNoteGoogle: POST status='+r2.status);
+            status = r2.status;
         }
+        if (status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ Notă NU s-a trimis la Google: "'+text+'" (status '+status+')'); }
         syncGoogle();
     }
     async function delNoteGoogle(gid) {
@@ -745,10 +755,10 @@
             // executam direct crearea notei (NU repornim runCommand pe acelasi text, ca sa nu re-declansam aceeasi intrebare)
             var hasTk2 = !!localStorage.getItem('gcal_token');
             var existGid2 = journalData[p.noteKey] && journalData[p.noteKey].gid;
-            if (hasTk2) upsertNoteGoogle(p.y, p.m, p.d, p.noteText, existGid2);
-            else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); }
+            var toastAmbig = '✓ Notă (ai ales "notă")\n"'+p.noteText+'"';
+            if (hasTk2) upsertNoteGoogle(p.y, p.m, p.d, p.noteText, existGid2, toastAmbig);
+            else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); showToast(toastAmbig+' (local, offline)'); }
             logDbg('Ambiguitate rezolvată de utilizator: NOTĂ — "'+p.noteText+'"');
-            showToast('✓ Notă (ai ales "notă")\n"'+p.noteText+'"');
         } else {
             document.getElementById('cmdInput').value = p.nextDateStr + p.restTxt;
             logDbg('Ambiguitate rezolvată de utilizator: ziua următoare ('+p.nextDateStr+')');
@@ -767,7 +777,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v57', JSON.stringify(localDB)); localStorage.setItem('trident_j_v57', JSON.stringify(journalData)); }
+    function saveAll() { localStorage.setItem('trident_db_v58', JSON.stringify(localDB)); localStorage.setItem('trident_j_v58', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
