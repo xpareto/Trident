@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v58) -->
+<!-- START OF FILE: index.html (Trident v59) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v58</title>
+    <title>Trident v59</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v58</div>
+    <div class="v-badge" onclick="location.reload()">v59</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -144,6 +144,40 @@
     }
 
     var toastTimer = null;
+
+    // Cutii separate de reluare automata dupa reconectare: consola, bifare, stergere.
+    // La 401: pastram "cutia", aratam mesaj explicit ca actiunea NU s-a pierdut. La succes: golim cutia.
+    function pendingAlert401(label) {
+        var now = Date.now();
+        if (now - lastAuthAlertTs > 5000) {
+            lastAuthAlertTs = now;
+            alert('Sesiunea Google a expirat.\n\n'+label+' a fost salvat(ă) — se reia automat imediat ce te reconectezi.\n\nApasă butonul SYNC din antet ca să te reconectezi.');
+        }
+    }
+    function replayPending() {
+        var cmd = localStorage.getItem('trident_pending_cmd');
+        if (cmd) {
+            localStorage.removeItem('trident_pending_cmd');
+            logDbg('Reluare automată (consolă): "'+cmd+'"');
+            document.getElementById('cmdInput').value = cmd;
+            runCommand();
+        }
+        var tog = localStorage.getItem('trident_pending_toggle');
+        if (tog) {
+            localStorage.removeItem('trident_pending_toggle');
+            var o = JSON.parse(tog);
+            logDbg('Reluare automată (bifare): "'+o.name+'"');
+            tglStatus(o.id, o.isG);
+        }
+        var del = localStorage.getItem('trident_pending_delete');
+        if (del) {
+            localStorage.removeItem('trident_pending_delete');
+            var o2 = JSON.parse(del);
+            logDbg('Reluare automată (ștergere): "'+o2.name+'"');
+            delEv(o2.id, o2.isG, true);
+        }
+    }
+
     // Mes1: mesaj vizibil pe ecran, dupa fiecare creare, care explica ce s-a inteles din comanda
     function showToast(msg) {
         var t = document.getElementById('toast');
@@ -177,8 +211,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || localStorage.getItem('trident_db_v55') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || localStorage.getItem('trident_j_v55') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             // Local1: cache local al ultimelor evenimente Google aduse - afisate imediat, inainte sa se termine sincronizarea din fundal
@@ -258,8 +292,10 @@
         var tk = localStorage.getItem('gcal_token');
         var dateStr = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
         var body = { summary: name, start: { date: dateStr }, end: { date: dateStr }, recurrence: ['RRULE:FREQ=' + freq + ';INTERVAL=' + interval] };
-        var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: 'POST', headers: { Authorization: "Bearer " + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method: 'POST', headers: { Authorization: "Bearer " + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, true);
         logDbg('addRecurringToGoogle: POST status='+resp.status+' pt "'+name+'"');
+        if (resp.status === 401) { pendingAlert401('Comanda ta'); return; }
+        localStorage.removeItem('trident_pending_cmd');
         if (resp.status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ Recurență NU s-a trimis la Google: "'+name+'" (status '+resp.status+')'); }
         syncGoogle();
     }
@@ -490,6 +526,8 @@
         var curM = viewDate.getMonth(), curY = viewDate.getFullYear();
         var hasTk = !!localStorage.getItem('gcal_token');
         logDbg('Comandă primită: "'+val+'" (token Google: '+hasTk+')');
+        // salvam comanda bruta ACUM, inainte de orice procesare - daca navigam catre Google pt reconectare, supravietuieste
+        localStorage.setItem('trident_pending_cmd', val);
 
         val = preprocessShortcuts(val, curY, curM);
 
@@ -544,7 +582,7 @@
             var durR = Math.round((dE - dS) / 86400000) + 1;
             var toastR = '✓ Interval creat: '+dS.toLocaleDateString('ro-RO')+' → '+dE.toLocaleDateString('ro-RO')+' ('+durR+' zile)\n"'+txR+'"';
             if (hasTk) { addEventToGoogle(dS.getFullYear(), dS.getMonth(), dS.getDate(), durR, txR, toastR); logDbg('→ interval relativ → trimis spre Google.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false }); saveAll(); logDbg('→ interval relativ → LOCAL (offline).'); showToast(toastR+' (local, offline)'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dS.getDate(), m:dS.getMonth(), y:dS.getFullYear(), t:getCategory(txR), n:txR, dur:durR, done:false }); saveAll(); logDbg('→ interval relativ → LOCAL (offline).'); localStorage.removeItem('trident_pending_cmd'); showToast(toastR+' (local, offline)'); }
             if (remInfo) createReminder(dS, remInfo, txR);
             viewDate = new Date(dS.getFullYear(), dS.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -555,7 +593,7 @@
             var dR = relDate(today0, nR, uR);
             var toastR2 = '✓ Eveniment creat pe '+dR.toLocaleDateString('ro-RO')+'\n"'+txR2+'"';
             if (hasTk) { addEventToGoogle(dR.getFullYear(), dR.getMonth(), dR.getDate(), 1, txR2, toastR2); logDbg('→ dată relativă → trimisă spre Google.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false }); saveAll(); logDbg('→ dată relativă → LOCAL (offline).'); showToast(toastR2+' (local, offline)'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dR.getDate(), m:dR.getMonth(), y:dR.getFullYear(), t:getCategory(txR2), n:txR2, dur:1, done:false }); saveAll(); logDbg('→ dată relativă → LOCAL (offline).'); localStorage.removeItem('trident_pending_cmd'); showToast(toastR2+' (local, offline)'); }
             if (remInfo) createReminder(dR, remInfo, txR2);
             viewDate = new Date(dR.getFullYear(), dR.getMonth(), 1); googleEvents = []; renderCalendar(); if(!hasTk) syncGoogle();
             inp.value = ""; return;
@@ -571,7 +609,7 @@
             var durCross = Math.round((dtE - dtS) / 86400000) + 1;
             var toastCross = '✓ Interval creat: '+dtS.toLocaleDateString('ro-RO')+' → '+dtE.toLocaleDateString('ro-RO')+' ('+durCross+' zile)\n"'+txCross+'"';
             if (hasTk) { addEventToGoogle(dtS.getFullYear(), dtS.getMonth(), dtS.getDate(), durCross, txCross, toastCross); logDbg('→ interval între luni → trimis spre Google, '+durCross+' zile.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false }); saveAll(); renderCalendar(); logDbg('→ interval între luni → LOCAL (offline), '+durCross+' zile.'); showToast(toastCross+' (local, offline)'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dtS.getDate(), m:dtS.getMonth(), y:dtS.getFullYear(), t:getCategory(txCross), n:txCross, dur:durCross, done:false }); saveAll(); renderCalendar(); logDbg('→ interval între luni → LOCAL (offline), '+durCross+' zile.'); localStorage.removeItem('trident_pending_cmd'); showToast(toastCross+' (local, offline)'); }
             if (remInfo) createReminder(dtS, remInfo, txCross);
             inp.value = ""; return;
         }
@@ -586,7 +624,7 @@
             var durRange = dEnd - dStart + 1;
             var toastRange = '✓ Interval creat: '+dStart+'-'+dEnd+'.'+(curM+1)+' ('+durRange+' zile)\n"'+txRange+'"';
             if (hasTk) { addEventToGoogle(curY, curM, dStart, durRange, txRange, toastRange); logDbg('→ interval în aceeași lună → trimis spre Google, '+durRange+' zile.'); }
-            else { localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false }); saveAll(); renderCalendar(); logDbg('→ interval în aceeași lună → LOCAL (offline), '+durRange+' zile.'); showToast(toastRange+' (local, offline)'); }
+            else { localDB.push({ id:'L'+Date.now(), d:dStart, m:curM, y:curY, t:getCategory(txRange), n:txRange, dur:durRange, done:false }); saveAll(); renderCalendar(); logDbg('→ interval în aceeași lună → LOCAL (offline), '+durRange+' zile.'); localStorage.removeItem('trident_pending_cmd'); showToast(toastRange+' (local, offline)'); }
             if (remInfo) createReminder(new Date(curY, curM, dStart), remInfo, txRange);
             inp.value = ""; return;
         }
@@ -618,7 +656,7 @@
             var existGid = journalData[noteKey] && journalData[noteKey].gid;
             var toastNote = '✓ Notă pe '+noteD+'.'+(noteM+1)+'\n"'+noteText+'"';
             if (hasTk) { upsertNoteGoogle(noteY, noteM, noteD, noteText, existGid, toastNote); logDbg('→ Recunoscut ca: notă → trimisă spre Google (ziua '+noteD+'.'+(noteM+1)+').'); }
-            else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); showToast(toastNote+' (local, offline)'); }
+            else { journalData[noteKey] = { n: noteText, gid: existGid || null }; saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: notă LOCALĂ (offline) pe ziua '+noteD+'.'+(noteM+1)+': "'+noteText+'"'); localStorage.removeItem('trident_pending_cmd'); showToast(toastNote+' (local, offline)'); }
             inp.value = ""; return;
         }
 
@@ -658,13 +696,13 @@
                     localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false, rec:{freq:freq, interval:interval} });
                     saveAll(); renderCalendar();
                     logDbg('→ Recunoscut ca: recurență LOCALĂ (offline, fără token Google), '+freq+'.');
-                    showToast(toastRec+' (local, offline)');
+                    localStorage.removeItem('trident_pending_cmd'); showToast(toastRec+' (local, offline)');
                 }
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             } else {
                 var toastEv = '✓ Eveniment creat pe '+day+'.'+(evM+1)+'.'+evY+'\n"'+name+'"';
                 if (hasTk) { addEventToGoogle(evY, evM, day, 1, name, toastEv); logDbg('→ Recunoscut ca: adăugare → trimisă spre Google pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); }
-                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); showToast(toastEv+' (local, offline)'); }
+                else { localDB.push({ id:'L'+Date.now(), d:day, m:evM, y:evY, t:cat, n:name, dur:1, done:false }); saveAll(); renderCalendar(); logDbg('→ Recunoscut ca: adăugare LOCALĂ (offline) pe ziua '+day+'.'+(evM+1)+': "'+name+'"'); localStorage.removeItem('trident_pending_cmd'); showToast(toastEv+' (local, offline)'); }
                 if (remInfo) createReminder(new Date(evY, evM, day), remInfo, name);
             }
             inp.value = "";
@@ -678,8 +716,10 @@
     async function addEventToGoogle(y, m, d, dur, name, toastMsg) {
         var tk = localStorage.getItem('gcal_token');
         var body = { summary: name, start: { date: isoDate(y, m, d) }, end: { date: isoDate(y, m, d + dur) } };
-        var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+        var resp = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) }, true);
         logDbg('addEventToGoogle: POST status='+resp.status+' pt "'+name+'"');
+        if (resp.status === 401) { pendingAlert401('Comanda ta'); return; }
+        localStorage.removeItem('trident_pending_cmd');
         if (resp.status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ NU s-a trimis la Google: "'+name+'" (status '+resp.status+')'); }
         syncGoogle();
     }
@@ -689,15 +729,17 @@
         var tk = localStorage.getItem('gcal_token');
         var status;
         if (existingGid) {
-            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+existingGid, { method:'PATCH', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify({ summary: '📝 '+text }) });
+            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+existingGid, { method:'PATCH', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify({ summary: '📝 '+text }) }, true);
             logDbg('upsertNoteGoogle: PATCH status='+r.status);
             status = r.status;
         } else {
             var body = { summary: '📝 '+text, start:{date:isoDate(y,m,d)}, end:{date:isoDate(y,m,d+1)} };
-            var r2 = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+            var r2 = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", { method:'POST', headers:{ Authorization:"Bearer "+tk, 'Content-Type':'application/json' }, body: JSON.stringify(body) }, true);
             logDbg('upsertNoteGoogle: POST status='+r2.status);
             status = r2.status;
         }
+        if (status === 401) { pendingAlert401('Comanda ta'); return; }
+        localStorage.removeItem('trident_pending_cmd');
         if (status < 300) { if (toastMsg) showToast(toastMsg); } else { showToast('✗ Notă NU s-a trimis la Google: "'+text+'" (status '+status+')'); }
         syncGoogle();
     }
@@ -715,7 +757,21 @@
         delete journalData[key]; saveAll(); renderCalendar();
     }
 
-    async function delEv(id, isG) { var ev=localDB.concat(googleEvents).find(function(x){return x.id===id}); if(!ev||!confirm("Ștergi: "+ev.n+"?"))return; if(isG){ var tk=localStorage.getItem('gcal_token'); await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'DELETE',headers:{Authorization:"Bearer "+tk}}); syncGoogle(); } else { localDB=localDB.filter(function(x){return x.id!==id}); saveAll(); renderCalendar(); } }
+    async function delEv(id, isG, skipConfirm) {
+        var ev = localDB.concat(googleEvents).find(function(x){return x.id===id});
+        if (!ev) return;
+        if (!skipConfirm && !confirm("Ștergi: "+ev.n+"?")) return;
+        if (isG) {
+            localStorage.setItem('trident_pending_delete', JSON.stringify({id:id, isG:true, name:ev.n}));
+            var tk = localStorage.getItem('gcal_token');
+            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id, {method:'DELETE',headers:{Authorization:"Bearer "+tk}}, true);
+            if (r.status === 401) { pendingAlert401('Ștergerea "'+ev.n+'"'); return; }
+            localStorage.removeItem('trident_pending_delete');
+            syncGoogle();
+        } else {
+            localDB = localDB.filter(function(x){return x.id!==id}); saveAll(); renderCalendar();
+        }
+    }
     function openDesc(id, isG, isJ) { activeDescRef={id:id,isG:isG,isJ:!!isJ}; var t=isJ?(journalData[id]?journalData[id].n:''):localDB.concat(googleEvents).find(function(x){return x.id===id}).desc; document.getElementById('descText').value=t||""; document.getElementById('descModal').style.display='flex'; }
     document.getElementById('btnSaveDesc').onclick = async function() {
         var t = document.getElementById('descText').value;
@@ -757,7 +813,7 @@
             var existGid2 = journalData[p.noteKey] && journalData[p.noteKey].gid;
             var toastAmbig = '✓ Notă (ai ales "notă")\n"'+p.noteText+'"';
             if (hasTk2) upsertNoteGoogle(p.y, p.m, p.d, p.noteText, existGid2, toastAmbig);
-            else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); showToast(toastAmbig+' (local, offline)'); }
+            else { journalData[p.noteKey] = { n: p.noteText, gid: existGid2 || null }; saveAll(); renderCalendar(); localStorage.removeItem('trident_pending_cmd'); showToast(toastAmbig+' (local, offline)'); }
             logDbg('Ambiguitate rezolvată de utilizator: NOTĂ — "'+p.noteText+'"');
         } else {
             document.getElementById('cmdInput').value = p.nextDateStr + p.restTxt;
@@ -777,12 +833,26 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v58', JSON.stringify(localDB)); localStorage.setItem('trident_j_v58', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
+    function saveAll() { localStorage.setItem('trident_db_v59', JSON.stringify(localDB)); localStorage.setItem('trident_j_v59', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
-    function handleGoogleCallback() { var p=new URLSearchParams(window.location.hash.substring(1)); var t=p.get('access_token'); if(t){localStorage.setItem('gcal_token',t); window.location.hash=""; syncGoogle();} }
-    async function tglStatus(id, isG) { var ev=localDB.concat(googleEvents).find(function(x){return x.id===id}); if(!ev)return; if(isG){ ev.done=!ev.done; var tk=localStorage.getItem('gcal_token'); await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id,{method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}); syncGoogle(); } else { ev.done=!ev.done; saveAll(); renderCalendar(); } }
+    function handleGoogleCallback() { var p=new URLSearchParams(window.location.hash.substring(1)); var t=p.get('access_token'); if(t){localStorage.setItem('gcal_token',t); window.location.hash=""; replayPending(); syncGoogle();} }
+    async function tglStatus(id, isG) {
+        var ev = localDB.concat(googleEvents).find(function(x){return x.id===id});
+        if (!ev) return;
+        if (isG) {
+            ev.done = !ev.done;
+            localStorage.setItem('trident_pending_toggle', JSON.stringify({id:id, isG:true, name:ev.n}));
+            var tk = localStorage.getItem('gcal_token');
+            var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id, {method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}, true);
+            if (r.status === 401) { pendingAlert401('Bifarea "'+ev.n+'"'); return; }
+            localStorage.removeItem('trident_pending_toggle');
+            syncGoogle();
+        } else {
+            ev.done = !ev.done; saveAll(); renderCalendar();
+        }
+    }
     function isoDate(y, m, d) { var dt = new Date(y, m, d); var pad = function(x){ return x < 10 ? '0'+x : ''+x; }; return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate()); }
     document.getElementById('btnSave').onclick = async function() {
         var n = document.getElementById('evName').value.trim();
