@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v60) -->
+<!-- START OF FILE: index.html (Trident v61) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v60</title>
+    <title>Trident v61</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v60</div>
+    <div class="v-badge" onclick="location.reload()">v61</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -147,6 +147,16 @@
 
     // Cutii separate de reluare automata dupa reconectare: consola, bifare, stergere.
     // La 401: pastram "cutia", aratam mesaj explicit ca actiunea NU s-a pierdut. La succes: golim cutia.
+    // Unele evenimente Google (ex: "zi de nastere", generate automat din Contacte) au eventType special
+    // si Google respinge orice incercare de a le modifica titlul (400 eventTypeRestriction). Pentru acestea,
+    // tinem starea "bifat" DOAR local, suprapusa peste ce vine de la Google, ca sa nu se piarda la fiecare sincronizare.
+    function getLocalOverrides() {
+        try { return JSON.parse(localStorage.getItem('trident_done_overrides') || '{}'); } catch(e) { return {}; }
+    }
+    function setLocalOverride(id, done) {
+        var o = getLocalOverrides(); o[id] = done; localStorage.setItem('trident_done_overrides', JSON.stringify(o));
+    }
+
     function pendingAlert401(label) {
         var now = Date.now();
         if (now - lastAuthAlertTs > 5000) {
@@ -211,8 +221,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v60') || localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v60') || localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v61') || localStorage.getItem('trident_db_v60') || localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v61') || localStorage.getItem('trident_j_v60') || localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             // Local1: cache local al ultimelor evenimente Google aduse - afisate imediat, inainte sa se termine sincronizarea din fundal
@@ -260,6 +270,7 @@
                 (dM.items || []).forEach(function(me) { if (me.recurrence) rruleMap[me.id] = me.recurrence[0]; });
 
                 var noteCount = 0;
+                var overrides = getLocalOverrides();
                 googleEvents = d.items.filter(function(ge) {
                     var title0 = ge.summary || "";
                     if (title0.indexOf('📝 ') === 0) {
@@ -278,7 +289,9 @@
                     var link = ge.htmlLink || ('https://www.google.com/calendar/event?eid=' + ge.id);
                     // RRULE real: fie de pe evenimentul insusi (daca e chiar master-ul), fie preluat de la parintele lui (recurringEventId)
                     var realRrule = (ge.recurrence && ge.recurrence[0]) || rruleMap[ge.recurringEventId] || null;
-                    return { id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: title.replace("[OK]", "").trim(), t: getCategory(title, realRrule), dur: dur, isG: true, done: isDone, link: link, desc: ge.description || "" };
+                    // daca exista un override local (eveniment cu tip restrictionat, ex. zi de nastere), acesta are prioritate fata de Google
+                    if (overrides.hasOwnProperty(ge.id)) isDone = overrides[ge.id];
+                    return { id: ge.id, d: sDt.getDate(), m: sDt.getMonth(), y: sDt.getFullYear(), n: title.replace("[OK]", "").trim(), t: getCategory(title, realRrule), dur: dur, isG: true, done: isDone, link: link, desc: ge.description || "", eventType: ge.eventType || null };
                 });
                 if (noteCount) logDbg('syncGoogle: '+noteCount+' note de jurnal găsite printre evenimente.');
                 saveAll();
@@ -842,7 +855,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v60', JSON.stringify(localDB)); localStorage.setItem('trident_j_v60', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
+    function saveAll() { localStorage.setItem('trident_db_v61', JSON.stringify(localDB)); localStorage.setItem('trident_j_v61', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
@@ -857,6 +870,17 @@
             var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id, {method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}, true);
             logDbg('tglStatus: PATCH status='+r.status+' pt "'+ev.n+'"');
             if (r.status === 401) { pendingAlert401('Bifarea "'+ev.n+'"'); return; }
+            if (r.status === 400) {
+                // Google respinge editarea unor tipuri speciale de evenimente (ex: "zi de nastere", generate din Contacte)
+                // -> pastram bifa DOAR local, suprapusa peste ce vine de la Google, ca sa nu se piarda la sincronizarea urmatoare
+                var errTxt400 = await r.text().catch(function(){return '';});
+                logDbg('tglStatus: 400 — probabil eveniment cu tip restricționat (ex. zi de naștere). Cad pe stare LOCALĂ. Detalii: '+errTxt400);
+                setLocalOverride(id, ev.done);
+                saveAll(); renderCalendar();
+                showToast((ev.done?'✓':'☐')+' Bifat local: "'+ev.n+'"\nGoogle nu permite modificarea acestui tip de eveniment — starea se ține doar în aplicație.');
+                localStorage.removeItem('trident_pending_toggle');
+                return;
+            }
             if (r.status >= 300) {
                 var errTxt = await r.text().catch(function(){return '';});
                 logDbg('tglStatus: EȘEC (nu 401) — '+r.status+' — '+errTxt);
