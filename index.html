@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v59) -->
+<!-- START OF FILE: index.html (Trident v60) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v59</title>
+    <title>Trident v60</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v59</div>
+    <div class="v-badge" onclick="location.reload()">v60</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -211,8 +211,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || localStorage.getItem('trident_db_v56') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || localStorage.getItem('trident_j_v56') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v60') || localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || localStorage.getItem('trident_db_v57') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v60') || localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || localStorage.getItem('trident_j_v57') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             // Local1: cache local al ultimelor evenimente Google aduse - afisate imediat, inainte sa se termine sincronizarea din fundal
@@ -765,7 +765,16 @@
             localStorage.setItem('trident_pending_delete', JSON.stringify({id:id, isG:true, name:ev.n}));
             var tk = localStorage.getItem('gcal_token');
             var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id, {method:'DELETE',headers:{Authorization:"Bearer "+tk}}, true);
+            logDbg('delEv: DELETE status='+r.status+' pt "'+ev.n+'"');
             if (r.status === 401) { pendingAlert401('Ștergerea "'+ev.n+'"'); return; }
+            if (r.status >= 300 && r.status !== 410) { // 410 Gone = deja stersa, e ok
+                var errTxt = await r.text().catch(function(){return '';});
+                logDbg('delEv: EȘEC (nu 401) — '+r.status+' — '+errTxt);
+                showToast('✗ Ștergerea "'+ev.n+'" NU a reușit pe Google (status '+r.status+').');
+                localStorage.removeItem('trident_pending_delete');
+                syncGoogle();
+                return;
+            }
             localStorage.removeItem('trident_pending_delete');
             syncGoogle();
         } else {
@@ -833,7 +842,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v59', JSON.stringify(localDB)); localStorage.setItem('trident_j_v59', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
+    function saveAll() { localStorage.setItem('trident_db_v60', JSON.stringify(localDB)); localStorage.setItem('trident_j_v60', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
@@ -846,7 +855,16 @@
             localStorage.setItem('trident_pending_toggle', JSON.stringify({id:id, isG:true, name:ev.n}));
             var tk = localStorage.getItem('gcal_token');
             var r = await gcalFetch("https://www.googleapis.com/calendar/v3/calendars/primary/events/"+id, {method:'PATCH',headers:{Authorization:"Bearer "+tk,'Content-Type':'application/json'},body:JSON.stringify({summary:ev.done?ev.n+" [OK]":ev.n.replace("[OK]","").trim()})}, true);
+            logDbg('tglStatus: PATCH status='+r.status+' pt "'+ev.n+'"');
             if (r.status === 401) { pendingAlert401('Bifarea "'+ev.n+'"'); return; }
+            if (r.status >= 300) {
+                var errTxt = await r.text().catch(function(){return '';});
+                logDbg('tglStatus: EȘEC (nu 401) — '+r.status+' — '+errTxt);
+                showToast('✗ Bifarea "'+ev.n+'" NU s-a salvat pe Google (status '+r.status+'). Va reveni la starea reală după resincronizare.');
+                localStorage.removeItem('trident_pending_toggle');
+                syncGoogle();
+                return;
+            }
             localStorage.removeItem('trident_pending_toggle');
             syncGoogle();
         } else {

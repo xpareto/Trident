@@ -1,4 +1,4 @@
-var CACHE = 'trident-cache-v59';
+var CACHE = 'trident-cache-v60';
 var FILES = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE; })
+        keys.filter(function(k) { return k !== CACHE; 60
             .map(function(k) { return caches.delete(k); })
       );
     })
