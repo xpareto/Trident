@@ -1,11 +1,11 @@
-<!-- START OF FILE: index.html (Trident v61) -->
+<!-- START OF FILE: index.html (Trident v62) -->
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="manifest" href="manifest.json"/>
-    <title>Trident v61</title>
+    <title>Trident v62</title>
     <style>
         :root {
             --bg: #FFFFFF; --header-bg: #1e293b; --border: #cbd5e1;
@@ -67,7 +67,7 @@
 <body onload="initApp()">
 
 <header class="hdr">
-    <div class="v-badge" onclick="location.reload()">v61</div>
+    <div class="v-badge" onclick="location.reload()">v62</div>
     <div id="mLabel" style="font-weight: bold; font-size: 13px; text-transform: uppercase;">...</div>
     <div style="display:flex; gap:4px;">
         <button class="nav-btn" onclick="toggleZoom()">[Z] <span id="zoomLbl">1</span></button>
@@ -221,8 +221,8 @@
 
     function initApp() {
         try {
-            localDB = JSON.parse(localStorage.getItem('trident_db_v61') || localStorage.getItem('trident_db_v60') || localStorage.getItem('trident_db_v59') || localStorage.getItem('trident_db_v58') || '[]');
-            journalData = JSON.parse(localStorage.getItem('trident_j_v61') || localStorage.getItem('trident_j_v60') || localStorage.getItem('trident_j_v59') || localStorage.getItem('trident_j_v58') || '{}');
+            localDB = JSON.parse(localStorage.getItem('trident_db_v62') || localStorage.getItem('trident_db_v61') || localStorage.getItem('trident_db_v60') || localStorage.getItem('trident_db_v59') || '[]');
+            journalData = JSON.parse(localStorage.getItem('trident_j_v62') || localStorage.getItem('trident_j_v61') || localStorage.getItem('trident_j_v60') || localStorage.getItem('trident_j_v59') || '{}');
             // migrare: notele vechi erau text simplu, acum sunt {n:text, gid:null|idGoogle}
             Object.keys(journalData).forEach(function(k) { if (typeof journalData[k] === 'string') journalData[k] = { n: journalData[k], gid: null }; });
             // Local1: cache local al ultimelor evenimente Google aduse - afisate imediat, inainte sa se termine sincronizarea din fundal
@@ -503,6 +503,8 @@
             ['m','c','a'].forEach(function(type) {
                 html += '<div class="c" onclick="openAddModal('+d+',\''+type+'\')">';
                 dayEvs.filter(function(x){return x.t === type}).forEach(function(ev){
+                    // v62 - ECO2: cu modul economic activ, task-urile deja bifate nu se mai afiseaza deloc - doar cele nebifate
+                    if (ecoMode && ev.done) return;
                     // v44: start/final se determina prin comparatie de DATE reale, nu prin cifra bruta a zilei
                     // (o cifra de zi, ex. 4, se putea repeta in fiecare luna a intervalului - bug la intervale intre luni)
                     var evStartDt = new Date(ev.y, ev.m, ev.d), evEndDt = new Date(ev.y, ev.m, ev.d + (ev.dur || 1) - 1);
@@ -855,7 +857,7 @@
         document.getElementById('editModal').style.display = 'flex';
     }
     function closeModal() { document.querySelectorAll('.modal').forEach(function(m){m.style.display='none'}); }
-    function saveAll() { localStorage.setItem('trident_db_v61', JSON.stringify(localDB)); localStorage.setItem('trident_j_v61', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
+    function saveAll() { localStorage.setItem('trident_db_v62', JSON.stringify(localDB)); localStorage.setItem('trident_j_v62', JSON.stringify(journalData)); localStorage.setItem('trident_ge_cache', JSON.stringify(googleEvents)); }
     function navMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); googleEvents=[]; renderCalendar(); syncGoogle(); }
     function toggleEco() { ecoMode=!ecoMode; localStorage.setItem('trident_eco', ecoMode); applyEcoStyle(); renderCalendar(); }
     function calLogin() { window.location.href="https://accounts.google.com/o/oauth2/v2/auth?client_id="+GCAL_CLIENT_ID+"&redirect_uri="+encodeURIComponent(GCAL_REDIRECT)+"&response_type=token&scope="+encodeURIComponent("https://www.googleapis.com/auth/calendar.events")+"&prompt=select_account"; }
