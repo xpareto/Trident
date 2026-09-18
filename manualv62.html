@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Tehnic - Trident Calendar v62</title>
+    <style>
+        :root { --primary: #1e293b; --accent: #2563EB; --text: #334155; --bg: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: var(--text); background: var(--bg); margin: 0; padding: 0; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .version { font-size: 14px; opacity: 0.8; margin-top: 5px; display: block; }
+
+        nav { background: white; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        nav a { color: var(--accent); text-decoration: none; font-weight: bold; font-size: 13px; }
+
+        section { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        h3 { color: var(--accent); margin-top: 20px; }
+        h4 { color: var(--primary); margin-top: 16px; margin-bottom: 6px; }
+
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        code { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+        pre { background: #0f172a; color: #e2e8f0; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+        pre code { background: none; color: inherit; font-weight: normal; padding: 0; }
+
+        .tech-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .tech-table th, .tech-table td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .tech-table th { background: #f1f5f9; color: var(--primary); }
+        .update-badge { background: #f59e0b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 900; vertical-align: middle; }
+        .warn { background: #fef2f2; border-left: 4px solid #ef4444; padding: 10px 15px; border-radius: 6px; margin: 10px 0; }
+        .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 15px; border-radius: 6px; margin: 10px 0; }
+        .ok { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 10px 15px; border-radius: 6px; margin: 10px 0; }
+
+        footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Manual Tehnic Trident Calendar</h1>
+    <span class="version">v62 - actualizat cumulativ, v40 → v62</span>
+</header>
+
+<div class="container">
+    <nav>
+        <a href="#flux">FLUX DE LUCRU</a>
+        <a href="#arhitectura">ARHITECTURĂ</a>
+        <a href="#sync">SINCRONIZARE</a>
+        <a href="#reluare">RELUARE AUTOMATĂ</a>
+        <a href="#restrictii">EVENIMENTE RESTRICȚIONATE</a>
+        <a href="#consola">SINTAXA CONSOLEI</a>
+        <a href="#eco">MOD ECONOMIC</a>
+        <a href="#restante">RESTANȚE</a>
+        <a href="#sortare">IERARHIA DE SORTARE</a>
+        <a href="#rrule">RRULE</a>
+        <a href="#interfata">INTERFAȚĂ</a>
+        <a href="#depanare">DEPANARE</a>
+    </nav>
+
+    <section id="flux">
+        <h2>0. Flux de lucru cu Claude</h2>
+        <div class="note">
+            <strong>Regulă activă:</strong> în sesiunile de dezvoltare Trident, Claude colectează observațiile/ideile lui Dan, pregătește o soluție (analiză + plan, în text), i-o propune, dar <strong>nu generează sau editează cod</strong> până Dan nu cere explicit acest lucru ("generează", "aplică", "mergi mai departe"). Regula rămâne activă până Dan spune altfel.
+        </div>
+        <p>De asemenea: <code>sw.js</code> (service worker) <strong>nu</strong> mai e generat automat de Claude la fiecare versiune — Dan îl actualizează manual, ca să nu consume tokeni inutil pe un fișier mic, repetitiv.</p>
+    </section>
+
+    <section id="arhitectura">
+        <h2>1. Arhitectură</h2>
+        <table class="tech-table">
+            <tr><th>Componentă</th><th>Tehnologie / Logică</th></tr>
+            <tr><td>Platformă</td><td>PWA (Progressive Web App), găzduită pe GitHub Pages (<code>xpareto.github.io/Trident/</code>)</td></tr>
+            <tr><td>Frontend</td><td>HTML5 / CSS3 (CSS Grid &amp; Flexbox)</td></tr>
+            <tr><td>Backend/Script</td><td>JavaScript ES5 (ultra-compatibil pentru tablete vechi)</td></tr>
+            <tr><td>Sincronizare</td><td>Google Calendar API v3 (OAuth 2.0 Implicit Flow), <strong>bidirecțională</strong> din v45</td></tr>
+            <tr><td>Persistență locală</td><td>LocalStorage, chei prefixate pe versiune (ex: <code>trident_db_v62</code>, cu fallback pe 3 versiuni anterioare la citire)</td></tr>
+            <tr><td>Cache evenimente Google</td><td><code>trident_ge_cache</code> — ultima listă de evenimente Google, persistată local <span class="update-badge">v58</span></td></tr>
+        </table>
+
+        <h3>Layout &amp; zoom <span class="update-badge">v45-v48</span></h3>
+        <p>Grid-ul folosește <code>min-width: 850px</code> fix (nu se strânge automat la ecrane înguste) — pe telefon sau tabletă, se navighează prin <strong>pinch-zoom nativ</strong> (zoom-out ca să vezi tot, zoom-in pe detalii). S-a încercat și o variantă cu strângere automată pe ecrane mici (media queries), dar a stricat fluxul de lucru pe tabletă (text trunchiat, pinch doar într-o direcție) — revenit definitiv la <code>min-width</code> fix.</p>
+        <p>Butonul <code>[Z]</code> comută între 3 niveluri (normal/compact/mini — rând mai mic, font mai mic) și afișează nivelul curent (1/2/3) lângă el.</p>
+    </section>
+
+    <section id="sync">
+        <h2>2. Sincronizare</h2>
+
+        <h3>2.1 Duală (citire RRULE) <span class="update-badge">v41</span></h3>
+        <table class="tech-table">
+            <tr><th>Pas</th><th>Acțiune</th></tr>
+            <tr><td>1. Instances</td><td>Descarcă aparițiile individuale (<code>singleEvents=true</code>) pentru a popula zilele lunii afișate — fereastra include și luna precedentă, pentru restanțe.</td></tr>
+            <tr><td>2. Masters</td><td>Descarcă evenimentele "părinte" (<code>singleEvents=false</code>) pentru a citi regula reală <code>RRULE</code> a recurenței.</td></tr>
+            <tr><td>3. State</td><td>Verifică prezența sufixului <code>[OK]</code> în titlu, sau override-ul local (vezi secțiunea 4), pentru starea "Bifat".</td></tr>
+        </table>
+
+        <h3>2.2 Bidirecțională <span class="update-badge">v45</span></h3>
+        <p>Până la v44, doar comenzile cu prefix <code>R</code> (recurență) se trimiteau efectiv la Google — restul rămâneau doar locale, pe dispozitiv, fără sincronizare între telefon/tabletă. Din v45, <strong>orice</strong> adăugare (punctuală, interval, notă, recurentă) se trimite direct la Google Calendar când există token valid; fără token (offline), rămâne locală, exact ca înainte.</p>
+        <p>Notele de jurnal se trimit ca evenimente Google cu prefix <code>📝 </code> în titlu — la citire, <code>syncGoogle()</code> le recunoaște după acest prefix și le pune înapoi în <code>journalData</code>, nu în lista de sarcini vizibile.</p>
+
+        <h3>2.3 Adresa de retur OAuth fixă <span class="update-badge">v55</span></h3>
+        <div class="warn">
+            <strong>Bug rezolvat:</strong> adresa de retur (<code>redirect_uri</code>) era calculată dinamic din <code>window.location</code>, care variază în funcție de cum a fost lansată pagina (browser direct vs. aplicație instalată/PWA) — cauza erorii repetate <code>redirect_uri_mismatch</code>. Fix: <code>GCAL_REDIRECT</code> e acum o adresă fixă, hardcodată, identică cu cea înregistrată în Google Cloud Console.
+        </div>
+
+        <h3>2.4 Silențioasă (pasivă) vs. cu alertă (activă) <span class="update-badge">v56</span></h3>
+        <p>Refresh-urile pasive (navigare între luni, deschiderea aplicației) folosesc <code>gcalFetch(url, options, silent=true)</code> — la sesiune expirată (401), doar loghează în panoul de depanare, fără să întrerupă utilizatorul cu o alertă. Acțiunile active (adăugare, editare, ștergere, bifare) rămân cu alertă, ca utilizatorul să știe mereu dacă ce a făcut a eșuat.</p>
+
+        <h3>2.5 Cache local pentru pornire instant <span class="update-badge">v58</span></h3>
+        <p>Evenimentele aduse de la Google se salvează acum și în <code>localStorage</code> (<code>trident_ge_cache</code>), nu doar în memorie. La pornirea aplicației, acest cache se încarcă <strong>înainte</strong> de primul <code>renderCalendar()</code>, deci grila se umple imediat cu ultimele date cunoscute, iar sincronizarea din fundal le împrospătează tăcut. Elimină ecranul gol la pornire/după pauză lungă.</p>
+
+        <h3>2.6 Confirmare onestă (toast) <span class="update-badge">v56-v58</span></h3>
+        <p>După orice comandă, apare un mesaj (toast) verde care explică ce s-a înțeles și ce s-a creat. Inițial acest mesaj apărea optimist, înainte de răspunsul real al serverului — corectat în v58: mesajul de succes apare doar <strong>după</strong> răspunsul real de la Google (status &lt; 300); dacă eșuează, apare un mesaj roșu de eroare, nu unul fals-pozitiv.</p>
+    </section>
+
+    <section id="reluare">
+        <h2>3. Reluare automată după reconectare <span class="update-badge">v59-v60</span></h2>
+        <p>Dacă o acțiune eșuează cu sesiune expirată (401) în timp ce navigarea către Google OAuth ar pierde ce tocmai s-a introdus, aplicația <strong>salvează</strong> acțiunea înainte de a permite navigarea, și o <strong>reia automat</strong> imediat după reconectarea reușită.</p>
+        <p>Trei "cutii" separate, independente una de alta (dacă faci mai multe acțiuni diferite înainte de reconectare, fiecare tip își reține <em>ultima</em> acțiune proprie, nu se suprascriu reciproc):</p>
+        <table class="tech-table">
+            <tr><th>Cheie localStorage</th><th>Acțiune acoperită</th><th>La reluare</th></tr>
+            <tr><td><code>trident_pending_cmd</code></td><td>Orice comandă din consolă (text brut)</td><td>Reintrodusă în input, <code>runCommand()</code> reapelat</td></tr>
+            <tr><td><code>trident_pending_toggle</code></td><td>Bifare/debifare checkbox</td><td><code>tglStatus(id, isG)</code> reapelat</td></tr>
+            <tr><td><code>trident_pending_delete</code></td><td>Ștergere eveniment</td><td><code>delEv(id, isG, skipConfirm=true)</code> — <strong>fără</strong> a cere din nou confirmarea, era deja confirmată prima dată</td></tr>
+        </table>
+        <p>Fiecare cutie se golește imediat ce acțiunea reușește (răspuns HTTP &lt; 300); rămâne populată doar la 401. La revenirea de la Google cu token nou (<code>handleGoogleCallback()</code>), <code>replayPending()</code> verifică toate trei cutiile și reia orice a rămas în așteptare.</p>
+        <div class="note">Toate funcțiile de scriere (<code>tglStatus</code>, <code>delEv</code>) verifică acum <strong>orice</strong> cod de eroare, nu doar 401 — la un eșec de alt tip, arată un mesaj clar în loc să treacă mai departe în tăcere (vezi și secțiunea 4, unde un cod 400 specific declanșează un fallback diferit).</div>
+    </section>
+
+    <section id="restrictii">
+        <h2>4. Evenimente restricționate de Google (ex. zile de naștere) <span class="update-badge">v61</span></h2>
+        <div class="warn">
+            <strong>Limitare de platformă, nu bug:</strong> evenimentele de tip <code>birthday</code> (generate automat din Contacte) resping explicit orice încercare de a le modifica titlul prin API, cu eroarea <code>400 eventTypeRestriction</code>. Bifarea unui astfel de eveniment (care se face prin adăugarea sufixului <code>[OK]</code> în titlu) eșuează mereu la Google.
+        </div>
+        <p><strong>Soluție:</strong> la eroare 400 specific pe <code>tglStatus</code>, starea "bifat" se salvează într-o hartă locală separată (<code>trident_done_overrides</code>, cheie = id eveniment Google), suprapusă peste starea reală de la Google la fiecare citire din <code>syncGoogle()</code>. Bifa rămâne vizibilă și persistentă în aplicație, chiar dacă Google nu are cunoștință de ea.</p>
+    </section>
+
+    <section id="consola">
+        <h2>5. Sintaxa Consolei</h2>
+        <p>Gramatica completă, sub formă de reguli EBNF-simplificate. Vezi și diagrama railway grafică (SVG) generată separat pentru o formă vizuală.</p>
+
+        <h3>5.1 DATA</h3>
+        <p>Element reutilizabil, folosit peste tot unde e nevoie de o dată de referință:</p>
+        <ul>
+            <li><code>zi[.lună]</code> — zi simplă (1-31), lună opțională. Fără lună: luna <em>vizualizată</em> curent. Fără zi deloc: data <em>reală</em> de azi <span class="update-badge">D2, v50</span>.</li>
+            <li><code>{S|B}O{W|M|Y}</code> / <code>EO{W|M|Y}</code> — prescurtări stil taskwarrior: <code>som/bom</code> (start of month), <code>eom</code>, <code>sow/bow</code> (start of week = <strong>luni</strong>), <code>eow</code>, <code>soy/boy</code>, <code>eoy</code>. <code>B</code> (begin) e alias pentru <code>S</code> (start) <span class="update-badge">v49</span>.</li>
+            <li><code>U[n]&lt;cod zi&gt;</code> — a n-a zi următoare de tipul respectiv, numărând de la azi (implicit n=1). Coduri: <code>L, MA, M, J, V, S, D</code> (română) sau <code>MO, TU, WE, TH, FR, SA, SU</code> (engleză). Ex: <code>U2MA</code> = a doua marți de la azi. Cu cifră explicită, nu mai e nevoie de spațiu înainte de text ce urmează <span class="update-badge">v56</span>.</li>
+        </ul>
+
+        <h3>5.2 OFFSET (opțional, se atașează după DATA)</h3>
+        <p><code>+N[z|s|l]</code> — deplasează data rezolvată cu N zile (implicit), săptămâni sau luni. Litera de unitate trebuie să fie <strong>minusculă</strong> ca să nu se confunde cu un cuvânt din text care începe cu aceeași literă (ex. <code>+5zPizza</code> nu confundă "P" cu unitatea).</p>
+
+        <h3>5.3 PUNCTUAL</h3>
+        <p><code>DATA [OFFSET] text</code> — adaugă un eveniment de-o zi. Fără token de dată deloc, textul întreg devine eveniment pe ziua de azi <span class="update-badge">D2</span>.</p>
+
+        <h3>5.4 INTERVAL</h3>
+        <p><code>DATA - DATA text</code> — trei variante: <code>7-14 Text</code> (aceeași lună), <code>4.7-30.9 Text</code> (luni diferite), sau cu shortcut-uri combinate: <code>10-eow Text</code>, <code>som-eom Text</code>, <code>+2l-eom Text</code>.</p>
+
+        <h3>5.5 REPETITIVE (recurență reală, RRULE)</h3>
+        <p><code>DATA [OFFSET] R[n]{S,L,A,W,M,Y,Z,D} text</code> — <code>R</code> obligatoriu pentru recurență. Litera de frecvență: <code>S/W</code>=săptămânal, <code>L/M</code>=lunar, <code>A/Y</code>=anual, <code>Z/D</code>=zilnic <span class="update-badge">v55</span>. <code>n</code> opțional = intervalul (ex. <code>R2L</code> = la fiecare 2 luni). Offset-ul se poate insera între zi și <code>R</code>: <code>17+2sR9S text</code> <span class="update-badge">v54</span>.</p>
+        <p>Trimisă direct la Google ca eveniment cu <code>recurrence: ["RRULE:FREQ=...;INTERVAL=..."]</code> — apare automat în toate lunile/anii viitoare. Offline, o recurență locală echivalentă e expandată de aplicație la randare.</p>
+
+        <h3>5.6 NOTĂ</h3>
+        <p><code>[DATA] N text</code> — o singură notă per zi (comandă nouă suprascrie textul precedent). Fără dată, notă pe ziua de azi.</p>
+
+        <h3>5.7 ȘTERGERE</h3>
+        <p><code>[DATA] D coloană rând</code> — coloană 1-3 (LUNARE/CURENTE/ANUALE), rând = al câtelea eveniment de pe acea zi/coloană.</p>
+
+        <h3>5.8 REM (sufix opțional, la orice comandă de adăugare)</h3>
+        <p><code>REM[n][AT h[:m]]</code> — reminder cu <code>n</code> zile înainte de data evenimentului (implicit 0), la ora <code>h:m</code> (dacă lipsește, aleasă aleator dintr-un set de sloturi 9:30-13:00, ca să nu sune mereu la aceeași oră). Spațiu opțional peste tot în interiorul sufixului; separator oră-minut acceptă <code>:</code>, <code>.</code> sau nimic <span class="update-badge">v57</span>.</p>
+        <div class="note">Tehnic, creează un <strong>eveniment separat</strong>, cu oră (<code>⏰ text</code>), cu <code>reminders.override</code> explicit (popup, 0 minute înainte) — Google nu poate seta reminder-e native "cu oră" pe evenimente all-day, iar fără override explicit, notificarea ar folosi setarea implicită a calendarului (posibil deloc).</div>
+
+        <h3>5.9 Dezambiguizare "coliziune mare" <span class="update-badge">v52-v53</span></h3>
+        <p>Prefixul <code>N</code> (notă) și prefixul <code>U</code> (zi următoare) se pot suprapune dacă textul unei note începe chiar cu un cod de zi (ex. <code>N3lr9s ceai...</code> — notă care începe cu "l", sau "a treia luni de la azi"?). În loc să ghicească, aplicația arată un dialog cu ambele interpretări explicite ("NOTĂ cu textul: ..." vs. "EVENIMENT cu textul: ..., în a N-a &lt;zi&gt;") și așteaptă alegerea utilizatorului. Fără cifră ordinală, rămâne heuristica veche (graniță de cuvânt) pentru a nu deranja notele obișnuite.</p>
+    </section>
+
+    <section id="eco">
+        <h2>6. Modul Economic (ECO)</h2>
+        <p>Ascunde zilele din trecut care nu mai necesită atenție, ca să nu scrolezi printr-o lună întreagă de rânduri irelevante.</p>
+        <h4>O zi rămâne vizibilă dacă:</h4>
+        <ul>
+            <li>e ziua de azi (mereu vizibilă), SAU</li>
+            <li>are cel puțin un task/eveniment de-o zi <strong>nebifat</strong>, SAU</li>
+            <li>e ziua de <strong>start</strong> a unui interval multi-zi nebifat care a început în luna vizualizată curent <span class="update-badge">Econ1, v51</span> (intervalele începute într-o lună precedentă sunt deja acoperite de cadranul de Restanțe, nu mai forțează afișarea aici).</li>
+        </ul>
+        <p>Notele de jurnal <strong>nu</strong> mai forțează afișarea zilei — nu trebuie bifate, deci o zi cu doar o notă poate fi ascunsă <span class="update-badge">Econ2, v51</span>.</p>
+        <h4>În interiorul unui rând vizibil <span class="update-badge">v62</span></h4>
+        <p>Cu ECO activ, task-urile deja bifate nu se mai afișează deloc, în nicio coloană — doar cele nebifate rămân vizibile, chiar și pe zile care apar din alt motiv (ex. ziua curentă).</p>
+    </section>
+
+    <section id="restante">
+        <h2>7. Restanțe</h2>
+        <p>Chenar roșu, înaintea zilei 1, cu sarcini/evenimente <strong>de-o zi</strong> nebifate, datate strict înainte de prima zi a lunii vizualizate. Intervalele multi-zi nu contează aici (evită zgomotul unui interval lung, nefinalizat, listat repetat).</p>
+        <p>Fereastra de sincronizare se extinde cu o lună înapoi special pentru a detecta aceste restanțe din Google Calendar, nu doar din datele locale.</p>
+        <div class="note">Poate exista un prag temporar de dată (<code>RESTANTE_CUTOFF</code>), setat manual în cod, ca să nu reapară dintr-o dată restanțe vechi de dinainte de începerea folosirii reale a aplicației — verifică în codul curent dacă mai e activ.</div>
+    </section>
+
+    <section id="sortare">
+        <h2>8. Ierarhia de Sortare (getCategory)</h2>
+        <ol>
+            <li><strong>Prefixe manuale de recurență:</strong> <code>RL/R[n]L</code> → LUNARE, <code>RS/R[n]S</code> → CURENTE, <code>RA/R[n]A</code> → ANUALE (plus aliasurile W/M/Y/Z/D, vezi secțiunea 5.5).</li>
+            <li><strong>Cuvinte cheie:</strong> <em>"Sfânt", "Ortodox", "Catolic", "Nuntă", "Cununie", "Botez", "Adormirea", "Ziua"</em> → ANUALE.</li>
+            <li><strong>Analiză RRULE reală</strong> (secțiunea 9): <code>MONTHLY</code> → LUNARE, <code>YEARLY</code> → ANUALE.</li>
+            <li><strong>Implicit:</strong> CURENTE.</li>
+        </ol>
+    </section>
+
+    <section id="rrule">
+        <h2>9. Cum se citește corect frecvența de repetare (RRULE)</h2>
+        <p>Google Calendar stochează recurența ca regulă standardizată RFC 5545 (<code>RRULE</code>), nu ca text. Instanțele individuale (<code>singleEvents=true</code>) nu au acest câmp — doar evenimentul-părinte îl are, de-aici sincronizarea duală (secțiunea 2.1).</p>
+        <pre><code>function parseRecurrence(recurrenceArray) {
+  var rruleLine = recurrenceArray.filter(function(r){
+    return r.indexOf('RRULE:') === 0;
+  })[0];
+  if (!rruleLine) return null;
+  var params = new URLSearchParams(rruleLine.replace('RRULE:', '').replace(/;/g, '&'));
+  return {
+    freq: params.get('FREQ'),
+    interval: parseInt(params.get('INTERVAL') || '1'),
+    byDay: params.get('BYDAY') ? params.get('BYDAY').split(',') : null,
+    count: params.get('COUNT'),
+    until: params.get('UNTIL')
+  };
+}</code></pre>
+    </section>
+
+    <section id="interfata">
+        <h2>10. Interfață</h2>
+        <ul>
+            <li><strong>Click pe eveniment</strong> = editare (nume + durată); <strong>dublu-click</strong> = adăugare nouă pe aceeași zi/coloană <span class="update-badge">v43</span>. Link-ul spre Google (↗) e buton separat.</li>
+            <li><strong>Editare durată pe Google:</strong> <code>start</code>/<code>end</code> se trimit la PATCH doar dacă durata s-a schimbat efectiv — trimiterea lor mereu cauza eroare 400 pe evenimente cu oră/instanțe recurente <span class="update-badge">v47</span>. <code>end.date</code> e exclusiv (ziua următoare ultimei zile).</li>
+            <li><strong>Notă cu buton [x]</strong> separat de [i], ca la task-uri.</li>
+            <li><strong>Zoom [Z]</strong> — 3 niveluri, afișate ca cifră lângă buton.</li>
+        </ul>
+    </section>
+
+    <section id="depanare">
+        <h2>11. Depanare</h2>
+        <p>Buton 🐞 în antet deschide un panou cu jurnal de depanare live (<code>logDbg()</code>) — fiecare comandă din consolă, fiecare sincronizare, fiecare eroare HTTP se loghează cu timestamp. Buton "COPIAZĂ ÎN CLIPBOARD" pentru a trimite jurnalul direct în conversație.</p>
+        <p>Practică utilă: la orice comportament neclar, deschide 🐞, reproduce acțiunea, copiază jurnalul — de cele mai multe ori cauza reală devine evidentă direct din codurile HTTP și mesajele de eroare Google incluse acolo.</p>
+    </section>
+</div>
+
+<footer>
+    Proiect Trident Calendar &copy; 2026. Manual tehnic, actualizat cumulativ v40 → v62.
+</footer>
+
+</body>
+</html>

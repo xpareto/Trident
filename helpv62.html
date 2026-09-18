@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghid de Utilizare - Trident Calendar v62</title>
+    <style>
+        :root {
+            --primary: #1e293b; --accent: #2563EB; --text: #334155; --bg: #f8fafc;
+            --blue: #e0f2fe; --yellow: #ffff00; --pink: #fff1f2; --green: #dcfce7;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: var(--text); background: var(--bg); margin: 0; padding: 0; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: white; padding: 30px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+        .version { font-size: 14px; opacity: 0.8; margin-top: 5px; display: block; }
+
+        nav { background: white; padding: 15px; border-radius: 10px; margin: 20px 0; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        nav a { color: var(--accent); text-decoration: none; font-weight: bold; font-size: 13px; }
+
+        section { background: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; }
+        h3 { color: var(--accent); margin-top: 20px; }
+
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        code { background: #e2e8f0; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+
+        .color-box { display: inline-block; width: 15px; height: 15px; border-radius: 3px; margin-right: 5px; vertical-align: middle; border: 1px solid #ccc; }
+        .update-badge { background: #f59e0b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 900; vertical-align: middle; }
+        .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 15px; border-radius: 6px; margin: 10px 0; }
+        .diagram-wrap { overflow-x: auto; padding: 10px 0; }
+
+        footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Ghid de Utilizare Trident Calendar</h1>
+    <span class="version">Versiunea v62 - cu gramatica railway a consolei</span>
+</header>
+
+<div class="container">
+    <nav>
+        <a href="#structura">STRUCTURĂ &amp; CULORI</a>
+        <a href="#comenzi">COMENZI</a>
+        <a href="#jurnal">JURNAL</a>
+        <a href="#railway">GRAMATICA CONSOLEI</a>
+        <a href="#depanare">DEPANARE</a>
+    </nav>
+
+    <section id="structura">
+        <h2>1. Structură și Culori</h2>
+        <p>Trident Calendar este o aplicație însoțitoare (companion) pentru Google Calendar, optimizată pentru vizualizarea pe 3 coloane tematice.</p>
+        <ul>
+            <li><strong>Coloanele fixe (Stânga):</strong> <code>Nr</code> (Numărul zilei) și <code>Zi</code> (Numele zilei săptămânii).</li>
+            <li><strong>Coloana LUNARE:</strong> Evenimente care se repetă în fiecare lună (Facturi, Chirii etc.).</li>
+            <li><strong>Coloana CURENTE:</strong> Sarcini punctuale, săptămânale și secțiunea de Jurnal.</li>
+            <li><strong>Coloana ANUALE:</strong> Zile de naștere, nunți, sărbători religioase.</li>
+        </ul>
+        <h3>Coduri de culoare</h3>
+        <ul>
+            <li><span class="color-box" style="background: var(--blue)"></span> <strong>Weekend:</strong> Toată linia devine albastru pal.</li>
+            <li><span class="color-box" style="background: var(--yellow)"></span> <strong>Azi:</strong> Toată linia (inclusiv Nr/Zi) devine galben intens.</li>
+            <li><span class="color-box" style="background: var(--pink)"></span> <strong>Sarcini:</strong> Roz (nebifat/urgent) → Verde (finalizat).</li>
+            <li><strong>Intervale:</strong> Prima zi marcată cu <code>(1:N)</code>, ultima zi marcată cu <strong>FINAL</strong>.</li>
+        </ul>
+    </section>
+
+    <section id="comenzi">
+        <h2>2. Interacțiuni și Comenzi</h2>
+        <ul>
+            <li><strong>Click pe un eveniment existent</strong> = editare (nume + durată). <strong>Dublu-click</strong> = adăugare nouă pe aceeași zi/coloană.</li>
+            <li><strong>Butonul [Z] (Zoom):</strong> Comută între modurile <em>Normal, Compact și Mini</em>; nivelul curent apare ca cifră lângă buton. Pe telefon/tabletă, folosește pinch-zoom nativ pentru a vedea tot sau a apropia detalii.</li>
+            <li><strong>Butonul ECO:</strong> Ascunde zilele trecute fără nimic nebifat. Verde = activ, gri = inactiv. Cu ECO activ, în zilele vizibile rămân afișate <strong>doar</strong> task-urile nebifate — cele bifate dispar din vedere, chiar dacă ziua rămâne vizibilă din alt motiv.</li>
+            <li><strong>Editare detalii [i]:</strong> butonul rotund <code>i</code> de lângă o sarcină (sau lângă nota de jurnal) deschide notele lungi, fără să ocupe tot ecranul. Dacă e galben, conține deja text.</li>
+            <li><strong>🐞 Depanare:</strong> buton dedicat, vezi secțiunea 5 mai jos.</li>
+        </ul>
+        <h3>Exemple rapide de comenzi</h3>
+        <ul>
+            <li><code>15 Pizza</code> — adaugă "Pizza" pe data de 15, coloana CURENTE.</li>
+            <li><code>Cumpărături</code> — fără nicio dată, se adaugă automat pe ziua de azi.</li>
+            <li><code>12D21</code> — șterge din ziua 12, coloana 2 (CURENTE), rândul 1.</li>
+            <li><code>20NNota</code> — adaugă o notă de jurnal pe data de 20.</li>
+            <li><code>15RLGaz</code> — recurență lunară reală (RRULE trimis la Google), coloana LUNARE, începând cu ziua 15.</li>
+            <li><code>17+2sR9S text</code> — peste 2 săptămâni de la ziua 17, pornește o recurență săptămânală la fiecare 9 săptămâni.</li>
+            <li><code>eom Factura</code> — adaugă pe ultima zi a lunii curente.</li>
+            <li><code>som-eom Vacanta</code> — interval pe toată luna curentă.</li>
+            <li><code>U2MA Control</code> — programează pe a doua marți de la azi.</li>
+            <li><code>15 Pizza REM2AT9:30</code> — adaugă evenimentul și un reminder cu 2 zile înainte, la 9:30.</li>
+        </ul>
+        <div class="note">Dacă o comandă e ambiguă (poate fi și notă, și un alt tip de eveniment — ex. <code>N</code> urmat de un cod de zi), aplicația nu ghicește: îți arată un dialog cu ambele variante explicate în cuvinte, și aștepți să alegi.</div>
+    </section>
+
+    <section id="jurnal">
+        <h2>3. Jurnalul Inteligent</h2>
+        <p>Notele de jurnal ocupă un singur rând subțire, cu prefix 📝, în josul coloanei CURENTE — o singură notă per zi (o comandă nouă suprascrie textul precedent). Pentru a citi sau edita o notă lungă, apasă butonul rotund <code>[i]</code> de lângă notă. Notele au și buton propriu de ștergere <code>[x]</code>.</p>
+        <p>Notele nu forțează afișarea unei zile ascunse de modul ECO — nu trebuie bifate, deci nu contează ca "lucru nefinalizat".</p>
+    </section>
+
+    <section id="railway">
+        <h2>4. Gramatica Consolei (diagramă railway)</h2>
+        <p>Sintaxa completă a liniei de comandă, în format vizual clasic (stil JSON.org): dreptunghi galben = element compus (referință la o altă regulă), capsulă albastră = literă/simbol fix, linia principală = drumul implicit, ramurile = alternative.</p>
+        <div class="diagram-wrap">
+<svg xmlns="http://www.w3.org/2000/svg" width="773.5" height="1636.0" viewBox="0 0 773.5 1636.0" style="max-width:100%; height:auto;">
+<rect x="0" y="0" width="773.5" height="1636.0" fill="white"/>
+<style>
+svg text { font-family: monospace, monospace; }
+g.terminal rect { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.5; }
+g.terminal text { fill: #1e3a8a; font-weight: bold; }
+g.non-terminal rect { fill: #fef3c7; stroke: #d97706; stroke-width: 1.5; }
+g.non-terminal text { fill: #92400e; }
+text.comment { fill: #64748b; font-style: italic; font-size: 12px; }
+path { stroke: #475569; stroke-width: 1.5; fill: none; }
+</style>
+<text x="20" y="38" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">1. DATA</text><g transform="translate(20,52)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><g>
+<path d="M40 40h0.0" /><path d="M673.5 40h0.0" /><path d="M40.0 40h20" /><g>
+<path d="M60.0 40h172.25" /><path d="M481.25 40h172.25" /><g class="non-terminal ">
+<path d="M232.25 40h0.0" /><path d="M328.75 40h0.0" /><rect height="22" width="96.5" x="232.25" y="29"></rect><text x="280.5" y="44">zi (1-31)</text></g><path d="M328.75 40h10" /><g>
+<path d="M338.75 40h0.0" /><path d="M481.25 40h0.0" /><path d="M338.75 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M358.75 20h102.5" /></g><path d="M461.25 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M338.75 40h20" /><g>
+<path d="M358.75 40h0.0" /><path d="M461.25 40h0.0" /><g class="terminal ">
+<path d="M358.75 40h0.0" /><path d="M387.25 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="358.75" y="29"></rect><text x="373" y="44">.</text></g><path d="M387.25 40h10" /><path d="M397.25 40h10" /><g class="non-terminal ">
+<path d="M407.25 40h0.0" /><path d="M461.25 40h0.0" /><rect height="22" width="54" x="407.25" y="29"></rect><text x="434.25" y="44">lună</text></g></g><path d="M461.25 40h20" /></g></g><path d="M653.5 40h20" /><path d="M40.0 40a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g>
+<path d="M60.0 70h75.0" /><path d="M578.5 70h75.0" /><g>
+<path d="M135.0 70h0.0" /><path d="M203.5 70h0.0" /><path d="M135.0 70h20" /><g class="terminal ">
+<path d="M155.0 70h0.0" /><path d="M183.5 70h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="155" y="59"></rect><text x="169.25" y="74">S</text></g><path d="M183.5 70h20" /><path d="M135.0 70a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M155.0 100h0.0" /><path d="M183.5 100h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="155" y="89"></rect><text x="169.25" y="104">B</text></g><path d="M183.5 100a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /></g><path d="M203.5 70h10" /><g class="terminal ">
+<path d="M213.5 70h0.0" /><path d="M242.0 70h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="213.5" y="59"></rect><text x="227.75" y="74">O</text></g><path d="M242.0 70h10" /><g>
+<path d="M252.0 70h0.0" /><path d="M320.5 70h0.0" /><path d="M252.0 70h20" /><g class="terminal ">
+<path d="M272.0 70h0.0" /><path d="M300.5 70h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="272" y="59"></rect><text x="286.25" y="74">W</text></g><path d="M300.5 70h20" /><path d="M252.0 70a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M272.0 100h0.0" /><path d="M300.5 100h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="272" y="89"></rect><text x="286.25" y="104">M</text></g><path d="M300.5 100a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /><path d="M252.0 70a10 10 0 0 1 10 10v40a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M272.0 130h0.0" /><path d="M300.5 130h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="272" y="119"></rect><text x="286.25" y="134">Y</text></g><path d="M300.5 130a10 10 0 0 0 10 -10v-40a10 10 0 0 1 10 -10" /></g><path d="M320.5 70h10" /><g class="non-terminal ">
+<path d="M330.5 70h0.0" /><path d="M578.5 70h0.0" /><text class="comment" x="454.5" y="75">start/begin + of + week/month/year</text></g></g><path d="M653.5 70a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /><path d="M40.0 40a10 10 0 0 1 10 10v100a10 10 0 0 0 10 10" /><g>
+<path d="M60.0 160h118.0" /><path d="M535.5 160h118.0" /><g class="terminal ">
+<path d="M178.0 160h0.0" /><path d="M206.5 160h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="178" y="149"></rect><text x="192.25" y="164">E</text></g><path d="M206.5 160h10" /><path d="M216.5 160h10" /><g class="terminal ">
+<path d="M226.5 160h0.0" /><path d="M255.0 160h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="226.5" y="149"></rect><text x="240.75" y="164">O</text></g><path d="M255.0 160h10" /><g>
+<path d="M265.0 160h0.0" /><path d="M333.5 160h0.0" /><path d="M265.0 160h20" /><g class="terminal ">
+<path d="M285.0 160h0.0" /><path d="M313.5 160h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="285" y="149"></rect><text x="299.25" y="164">W</text></g><path d="M313.5 160h20" /><path d="M265.0 160a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M285.0 190h0.0" /><path d="M313.5 190h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="285" y="179"></rect><text x="299.25" y="194">M</text></g><path d="M313.5 190a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /><path d="M265.0 160a10 10 0 0 1 10 10v40a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M285.0 220h0.0" /><path d="M313.5 220h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="285" y="209"></rect><text x="299.25" y="224">Y</text></g><path d="M313.5 220a10 10 0 0 0 10 -10v-40a10 10 0 0 1 10 -10" /></g><path d="M333.5 160h10" /><g class="non-terminal ">
+<path d="M343.5 160h0.0" /><path d="M535.5 160h0.0" /><text class="comment" x="439.5" y="165">end + of + week/month/year</text></g></g><path d="M653.5 160a10 10 0 0 0 10 -10v-100a10 10 0 0 1 10 -10" /><path d="M40.0 40a10 10 0 0 1 10 10v199a10 10 0 0 0 10 10" /><g>
+<path d="M60.0 259h0.0" /><path d="M653.5 259h0.0" /><g class="terminal ">
+<path d="M60.0 259h0.0" /><path d="M88.5 259h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="60" y="248"></rect><text x="74.25" y="263">U</text></g><path d="M88.5 259h10" /><g>
+<path d="M98.5 259h0.0" /><path d="M167.0 259h0.0" /><path d="M98.5 259a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M118.5 239h28.5" /></g><path d="M147.0 239a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M98.5 259h20" /><g class="non-terminal ">
+<path d="M118.5 259h0.0" /><path d="M147.0 259h0.0" /><rect height="22" width="28.5" x="118.5" y="248"></rect><text x="132.75" y="263">n</text></g><path d="M147.0 259h20" /></g><path d="M167.0 259h10" /><g class="non-terminal ">
+<path d="M177.0 259h0.0" /><path d="M392.5 259h0.0" /><rect height="22" width="215.5" x="177" y="248"></rect><text x="284.75" y="263">cod zi (L/MA/M/J/V/S/D)</text></g><path d="M392.5 259h10" /><path d="M402.5 259h10" /><g class="non-terminal ">
+<path d="M412.5 259h0.0" /><path d="M653.5 259h0.0" /><text class="comment" x="533" y="264">a n-a zi următoare (n implicit 1)</text></g></g><path d="M653.5 259a10 10 0 0 0 10 -10v-199a10 10 0 0 1 10 -10" /><path d="M40.0 40a10 10 0 0 1 10 10v226a10 10 0 0 0 10 10" /><g class="non-terminal ">
+<path d="M60.0 286h246.25" /><path d="M407.25 286h246.25" /><text class="comment" x="356.75" y="291">(lipsă) → azi</text></g><path d="M653.5 286a10 10 0 0 0 10 -10v-226a10 10 0 0 1 10 -10" /></g><path d="M 673.5 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="414.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">2. OFFSET (opțional, se atașează după DATA)</text><g transform="translate(20,428.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><path d="M40 40h10" /><g class="terminal ">
+<path d="M50 40h0.0" /><path d="M78.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="50" y="29"></rect><text x="64.25" y="44">+</text></g><path d="M78.5 40h10" /><path d="M88.5 40h10" /><g class="non-terminal ">
+<path d="M98.5 40h0.0" /><path d="M127.0 40h0.0" /><rect height="22" width="28.5" x="98.5" y="29"></rect><text x="112.75" y="44">N</text></g><path d="M127.0 40h10" /><g>
+<path d="M137.0 40h0.0" /><path d="M245.5 40h0.0" /><path d="M137.0 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M157.0 20h68.5" /></g><path d="M225.5 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M137.0 40h20" /><g>
+<path d="M157.0 40h0.0" /><path d="M225.5 40h0.0" /><path d="M157.0 40h20" /><g class="terminal ">
+<path d="M177.0 40h0.0" /><path d="M205.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="177" y="29"></rect><text x="191.25" y="44">z</text></g><path d="M205.5 40h20" /><path d="M157.0 40a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M177.0 70h0.0" /><path d="M205.5 70h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="177" y="59"></rect><text x="191.25" y="74">s</text></g><path d="M205.5 70a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /><path d="M157.0 40a10 10 0 0 1 10 10v40a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M177.0 100h0.0" /><path d="M205.5 100h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="177" y="89"></rect><text x="191.25" y="104">l</text></g><path d="M205.5 100a10 10 0 0 0 10 -10v-40a10 10 0 0 1 10 -10" /></g><path d="M225.5 40h20" /></g><path d="M 245.5 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="607.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">3. PUNCTUAL := DATA [OFFSET] text</text><g transform="translate(20,621.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><path d="M40 40h10" /><g class="non-terminal ">
+<path d="M50 40h0.0" /><path d="M104.0 40h0.0" /><rect height="22" width="54" x="50" y="29"></rect><text x="77" y="44">DATA</text></g><path d="M104.0 40h10" /><g>
+<path d="M114.0 40h0.0" /><path d="M225.0 40h0.0" /><path d="M114.0 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M134.0 20h71.0" /></g><path d="M205.0 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M114.0 40h20" /><g class="non-terminal ">
+<path d="M134.0 40h0.0" /><path d="M205.0 40h0.0" /><rect height="22" width="71" x="134" y="29"></rect><text x="169.5" y="44">OFFSET</text></g><path d="M205.0 40h20" /></g><path d="M225.0 40h10" /><g class="non-terminal ">
+<path d="M235.0 40h0.0" /><path d="M289.0 40h0.0" /><rect height="22" width="54" x="235" y="29"></rect><text x="262" y="44">text</text></g><path d="M289.0 40h10" /><path d="M 299.0 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="740.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">4. INTERVAL := DATA - DATA text</text><g transform="translate(20,754.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 21v20m10 -20v20m-10 -10h20" /></g><path d="M40 31h10" /><g class="non-terminal ">
+<path d="M50 31h0.0" /><path d="M104.0 31h0.0" /><rect height="22" width="54" x="50" y="20"></rect><text x="77" y="35">DATA</text></g><path d="M104.0 31h10" /><path d="M114.0 31h10" /><g class="terminal ">
+<path d="M124.0 31h0.0" /><path d="M152.5 31h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="124" y="20"></rect><text x="138.25" y="35">-</text></g><path d="M152.5 31h10" /><path d="M162.5 31h10" /><g class="non-terminal ">
+<path d="M172.5 31h0.0" /><path d="M226.5 31h0.0" /><rect height="22" width="54" x="172.5" y="20"></rect><text x="199.5" y="35">DATA</text></g><path d="M226.5 31h10" /><path d="M236.5 31h10" /><g class="non-terminal ">
+<path d="M246.5 31h0.0" /><path d="M300.5 31h0.0" /><rect height="22" width="54" x="246.5" y="20"></rect><text x="273.5" y="35">text</text></g><path d="M300.5 31h10" /><path d="M 310.5 31 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="864.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">5. REPETITIVE := DATA [OFFSET] R[n]{S,L,A,W,M,Y,Z,D} text</text><g transform="translate(20,878.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><path d="M40 40h10" /><g class="non-terminal ">
+<path d="M50 40h0.0" /><path d="M104.0 40h0.0" /><rect height="22" width="54" x="50" y="29"></rect><text x="77" y="44">DATA</text></g><path d="M104.0 40h10" /><g>
+<path d="M114.0 40h0.0" /><path d="M225.0 40h0.0" /><path d="M114.0 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M134.0 20h71.0" /></g><path d="M205.0 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M114.0 40h20" /><g class="non-terminal ">
+<path d="M134.0 40h0.0" /><path d="M205.0 40h0.0" /><rect height="22" width="71" x="134" y="29"></rect><text x="169.5" y="44">OFFSET</text></g><path d="M205.0 40h20" /></g><path d="M225.0 40h10" /><g class="terminal ">
+<path d="M235.0 40h0.0" /><path d="M263.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="235" y="29"></rect><text x="249.25" y="44">R</text></g><path d="M263.5 40h10" /><g>
+<path d="M273.5 40h0.0" /><path d="M342.0 40h0.0" /><path d="M273.5 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M293.5 20h28.5" /></g><path d="M322.0 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M273.5 40h20" /><g class="non-terminal ">
+<path d="M293.5 40h0.0" /><path d="M322.0 40h0.0" /><rect height="22" width="28.5" x="293.5" y="29"></rect><text x="307.75" y="44">n</text></g><path d="M322.0 40h20" /></g><g>
+<path d="M342.0 40h0.0" /><path d="M410.5 40h0.0" /><path d="M342.0 40h20" /><g class="terminal ">
+<path d="M362.0 40h0.0" /><path d="M390.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="29"></rect><text x="376.25" y="44">S</text></g><path d="M390.5 40h20" /><path d="M342.0 40a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 70h0.0" /><path d="M390.5 70h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="59"></rect><text x="376.25" y="74">L</text></g><path d="M390.5 70a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v40a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 100h0.0" /><path d="M390.5 100h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="89"></rect><text x="376.25" y="104">A</text></g><path d="M390.5 100a10 10 0 0 0 10 -10v-40a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v70a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 130h0.0" /><path d="M390.5 130h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="119"></rect><text x="376.25" y="134">W</text></g><path d="M390.5 130a10 10 0 0 0 10 -10v-70a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v100a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 160h0.0" /><path d="M390.5 160h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="149"></rect><text x="376.25" y="164">M</text></g><path d="M390.5 160a10 10 0 0 0 10 -10v-100a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v130a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 190h0.0" /><path d="M390.5 190h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="179"></rect><text x="376.25" y="194">Y</text></g><path d="M390.5 190a10 10 0 0 0 10 -10v-130a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v160a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 220h0.0" /><path d="M390.5 220h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="209"></rect><text x="376.25" y="224">Z</text></g><path d="M390.5 220a10 10 0 0 0 10 -10v-160a10 10 0 0 1 10 -10" /><path d="M342.0 40a10 10 0 0 1 10 10v190a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M362.0 250h0.0" /><path d="M390.5 250h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="362" y="239"></rect><text x="376.25" y="254">D</text></g><path d="M390.5 250a10 10 0 0 0 10 -10v-190a10 10 0 0 1 10 -10" /></g><path d="M410.5 40h10" /><g class="non-terminal ">
+<path d="M420.5 40h0.0" /><path d="M474.5 40h0.0" /><rect height="22" width="54" x="420.5" y="29"></rect><text x="447.5" y="44">text</text></g><path d="M474.5 40h10" /><path d="M 484.5 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="1207.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">6. NOTĂ := [DATA] N text</text><g transform="translate(20,1221.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><g>
+<path d="M40 40h0.0" /><path d="M134.0 40h0.0" /><path d="M40.0 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M60.0 20h54.0" /></g><path d="M114.0 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M40.0 40h20" /><g class="non-terminal ">
+<path d="M60.0 40h0.0" /><path d="M114.0 40h0.0" /><rect height="22" width="54" x="60" y="29"></rect><text x="87" y="44">DATA</text></g><path d="M114.0 40h20" /></g><path d="M134.0 40h10" /><g class="terminal ">
+<path d="M144.0 40h0.0" /><path d="M172.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="144" y="29"></rect><text x="158.25" y="44">N</text></g><path d="M172.5 40h10" /><path d="M182.5 40h10" /><g class="non-terminal ">
+<path d="M192.5 40h0.0" /><path d="M246.5 40h0.0" /><rect height="22" width="54" x="192.5" y="29"></rect><text x="219.5" y="44">text</text></g><path d="M246.5 40h10" /><path d="M 256.5 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="1340.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">7. ȘTERGERE := [DATA] D coloană rând</text><g transform="translate(20,1354.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 30v20m10 -20v20m-10 -10h20" /></g><g>
+<path d="M40 40h0.0" /><path d="M134.0 40h0.0" /><path d="M40.0 40a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M60.0 20h54.0" /></g><path d="M114.0 20a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M40.0 40h20" /><g class="non-terminal ">
+<path d="M60.0 40h0.0" /><path d="M114.0 40h0.0" /><rect height="22" width="54" x="60" y="29"></rect><text x="87" y="44">DATA</text></g><path d="M114.0 40h20" /></g><path d="M134.0 40h10" /><g class="terminal ">
+<path d="M144.0 40h0.0" /><path d="M172.5 40h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="144" y="29"></rect><text x="158.25" y="44">D</text></g><path d="M172.5 40h10" /><path d="M182.5 40h10" /><g class="non-terminal ">
+<path d="M192.5 40h0.0" /><path d="M323.0 40h0.0" /><rect height="22" width="130.5" x="192.5" y="29"></rect><text x="257.75" y="44">coloană (1-3)</text></g><path d="M323.0 40h10" /><path d="M333.0 40h10" /><g class="non-terminal ">
+<path d="M343.0 40h0.0" /><path d="M397.0 40h0.0" /><rect height="22" width="54" x="343" y="29"></rect><text x="370" y="44">rând</text></g><path d="M397.0 40h10" /><path d="M 407.0 40 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g><text x="20" y="1473.0" font-family="monospace" font-size="16" font-weight="bold" fill="#1e293b">8. REM (sufix opțional) := REM[n][AT h[:m]]</text><g transform="translate(20,1487.0)">
+<g transform="translate(.5 .5)">
+<g>
+<path d="M20 38v20m10 -20v20m-10 -10h20" /></g><path d="M40 48h10" /><g class="terminal ">
+<path d="M50 48h0.0" /><path d="M95.5 48h0.0" /><rect height="22" rx="10" ry="10" width="45.5" x="50" y="37"></rect><text x="72.75" y="52">REM</text></g><path d="M95.5 48h10" /><g>
+<path d="M105.5 48h0.0" /><path d="M174.0 48h0.0" /><path d="M105.5 48a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M125.5 28h28.5" /></g><path d="M154.0 28a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M105.5 48h20" /><g class="non-terminal ">
+<path d="M125.5 48h0.0" /><path d="M154.0 48h0.0" /><rect height="22" width="28.5" x="125.5" y="37"></rect><text x="139.75" y="52">n</text></g><path d="M154.0 48h20" /></g><g>
+<path d="M174.0 48h0.0" /><path d="M456.5 48h0.0" /><path d="M174.0 48a10 10 0 0 0 10 -10v-8a10 10 0 0 1 10 -10" /><g>
+<path d="M194.0 20h242.5" /></g><path d="M436.5 20a10 10 0 0 1 10 10v8a10 10 0 0 0 10 10" /><path d="M174.0 48h20" /><g>
+<path d="M194.0 48h0.0" /><path d="M436.5 48h0.0" /><g class="terminal ">
+<path d="M194.0 48h0.0" /><path d="M231.0 48h0.0" /><rect height="22" rx="10" ry="10" width="37" x="194" y="37"></rect><text x="212.5" y="52">AT</text></g><path d="M231.0 48h10" /><path d="M241.0 48h10" /><g class="non-terminal ">
+<path d="M251.0 48h0.0" /><path d="M279.5 48h0.0" /><rect height="22" width="28.5" x="251" y="37"></rect><text x="265.25" y="52">h</text></g><path d="M279.5 48h10" /><g>
+<path d="M289.5 48h0.0" /><path d="M436.5 48h0.0" /><path d="M289.5 48a10 10 0 0 0 10 -10v0a10 10 0 0 1 10 -10" /><g>
+<path d="M309.5 28h107.0" /></g><path d="M416.5 28a10 10 0 0 1 10 10v0a10 10 0 0 0 10 10" /><path d="M289.5 48h20" /><g>
+<path d="M309.5 48h0.0" /><path d="M416.5 48h0.0" /><g>
+<path d="M309.5 48h0.0" /><path d="M378.0 48h0.0" /><path d="M309.5 48h20" /><g class="terminal ">
+<path d="M329.5 48h0.0" /><path d="M358.0 48h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="329.5" y="37"></rect><text x="343.75" y="52">:</text></g><path d="M358.0 48h20" /><path d="M309.5 48a10 10 0 0 1 10 10v10a10 10 0 0 0 10 10" /><g class="terminal ">
+<path d="M329.5 78h0.0" /><path d="M358.0 78h0.0" /><rect height="22" rx="10" ry="10" width="28.5" x="329.5" y="67"></rect><text x="343.75" y="82">.</text></g><path d="M358.0 78a10 10 0 0 0 10 -10v-10a10 10 0 0 1 10 -10" /></g><path d="M378.0 48h10" /><g class="non-terminal ">
+<path d="M388.0 48h0.0" /><path d="M416.5 48h0.0" /><rect height="22" width="28.5" x="388" y="37"></rect><text x="402.25" y="52">m</text></g></g><path d="M416.5 48h20" /></g></g><path d="M436.5 48h20" /></g><path d="M 456.5 48 h 20 m -10 -10 v 20 m 10 -20 v 20"></path></g></g>
+</svg>
+        </div>
+        <h3>Note de citire</h3>
+        <ul>
+            <li><strong>DATA</strong> e elementul de bază, refolosit peste tot: zi simplă, prescurtări (<code>som/bom/eom/sow/bow/eow/soy/boy/eoy</code>), sau <code>U[n]&lt;cod zi&gt;</code> pentru "a n-a zi următoare". Fără nimic, se subînțelege azi.</li>
+            <li><strong>OFFSET</strong> e opțional și mută data rezolvată cu N zile/săptămâni/luni, înainte de a aplica restul comenzii.</li>
+            <li>La <strong>REPETITIVE</strong>, litera după <code>R</code> poate fi românească (<code>S/L/A/Z</code>) sau englezească (<code>W/M/Y/D</code>) — înseamnă exact același lucru.</li>
+        </ul>
+    </section>
+
+    <section id="depanare">
+        <h2>5. Depanare</h2>
+        <p>Butonul 🐞 din antet deschide un jurnal live cu tot ce face aplicația: fiecare comandă interpretată, fiecare sincronizare, fiecare eroare de la Google. Butonul "COPIAZĂ ÎN CLIPBOARD" îți permite să trimiți jurnalul direct într-o conversație, pentru diagnosticare rapidă.</p>
+    </section>
+</div>
+
+<footer>
+    Proiect Trident Calendar &copy; 2026. Ghid de utilizare, v62.
+</footer>
+
+</body>
+</html>
